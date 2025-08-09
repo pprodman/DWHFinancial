@@ -1,6 +1,6 @@
 -- Sincroniza la tabla enriquecida con los datos de la tabla cruda.
 -- Es idempotente: solo inserta las filas nuevas que no existen.
-MERGE `TU_ID_DE_PROYECTO.bankinter_data.transacciones_enriquecidas` AS T  -- T es el alias para el Target (Destino)
+MERGE `dwhfinancial.financial_data.data_standard` AS T  -- T es el alias para el Target (Destino)
 USING (
   -- La subconsulta "USING" define la FUENTE de datos.
   -- Aquí es donde hacemos toda la transformación y el enriquecimiento, igual que antes.
@@ -22,7 +22,7 @@ USING (
     EXTRACT(MONTH FROM fecha) AS mes,
     FORMAT_DATE('%Y-%m', fecha) AS anio_mes
   FROM
-    `TU_ID_DE_PROYECTO.bankinter_data.transacciones_raw`
+    `dwhfinancial.financial_data.data_raw`
   WHERE
     -- Filtramos los datos no deseados de la fuente
     LOWER(concepto) NOT LIKE '%tarjeta diamond%'

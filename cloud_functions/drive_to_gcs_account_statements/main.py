@@ -18,7 +18,7 @@ logging.basicConfig(level=logging.INFO)
 PROJECT_ID = os.environ.get("GCP_PROJECT")
 BUCKET_NAME = os.environ.get("BUCKET_NAME")
 SECRET_NAME = os.environ.get("DRIVE_SECRET_NAME")
-FOLDER_ID_PROCESSED_CUENTA = os.environ.get("FOLDER_ID_PROCESSED_CUENTA")
+FOLDER_ID_PROCESSED_ACCOUNT = os.environ.get("FOLDER_ID_PROCESSED_ACCOUNT")
 
 
 def get_drive_credentials() -> service_account.Credentials:
@@ -48,7 +48,7 @@ def move_file_to_processed(credentials: service_account.Credentials, file_id: st
         drive_service = build('drive', 'v3', credentials=credentials)
         drive_service.files().update(
             fileId=file_id,
-            addParents=FOLDER_ID_PROCESSED_CUENTA,
+            addParents=FOLDER_ID_PROCESSED_ACCOUNT,
             removeParents=original_folder_id,
             fields='id, parents'
         ).execute()

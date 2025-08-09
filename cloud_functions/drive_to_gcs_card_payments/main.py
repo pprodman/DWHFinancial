@@ -19,7 +19,7 @@ PROJECT_ID = os.environ.get("GCP_PROJECT")
 BUCKET_NAME = os.environ.get("BUCKET_NAME")
 SECRET_NAME = os.environ.get("DRIVE_SECRET_NAME")
 # CAMBIO CLAVE 1: Variable de entorno para la carpeta PROCESSED de la TARJETA
-FOLDER_ID_PROCESSED_TARJETA = os.environ.get("FOLDER_ID_PROCESSED_TARJETA") 
+FOLDER_ID_PROCESSED_CARD = os.environ.get("FOLDER_ID_PROCESSED_CARD") 
 
 
 def get_drive_credentials() -> service_account.Credentials:
@@ -49,7 +49,7 @@ def move_file_to_processed(credentials: service_account.Credentials, file_id: st
         drive_service = build('drive', 'v3', credentials=credentials)
         drive_service.files().update(
             fileId=file_id,
-            addParents=FOLDER_ID_PROCESSED_TARJETA, # Usa la variable correcta
+            addParents=FOLDER_ID_PROCESSED_CARD, # Usa la variable correcta
             removeParents=original_folder_id,
             fields='id, parents'
         ).execute()

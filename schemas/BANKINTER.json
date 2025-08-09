@@ -1,0 +1,32 @@
+[
+  {
+    "name": "id_transaccion",
+    "type": "STRING",
+    "mode": "REQUIRED"
+  },
+  {
+    "name": "fecha",
+    "type": "DATE",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "concepto",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "importe",
+    "type": "FLOAT",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "origen",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "entidad",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  }
+]

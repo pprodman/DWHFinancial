@@ -1,0 +1,12 @@
+# Framework para Cloud Functions
+functions-framework==3.*
+
+# Librerías de Google Cloud
+google-cloud-storage==2.*
+google-cloud-secretmanager==2.*
+google-api-python-client==2.*
+google-auth==2.*
+
+# Librería para procesar datos de Excel
+pandas==2.*
+openpyxl==3.*

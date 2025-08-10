@@ -5,7 +5,7 @@ USING (
   -- La subconsulta "USING" define la FUENTE de datos.
   -- Aquí es donde hacemos toda la transformación y el enriquecimiento, igual que antes.
   SELECT
-    id_transaccion,
+    transaccion_id,
     fecha,
     concepto,
     importe,
@@ -29,13 +29,13 @@ USING (
 ) AS S -- S es el alias para la Source (Fuente)
 
 -- La condición de unión: cómo sabe BigQuery qué filas coinciden
-ON T.id_transaccion = S.id_transaccion
+ON T.transaccion_id = S.transaccion_id
 
 -- La acción a realizar: ¿Qué hacemos cuando una fila de la Fuente NO está en el Destino?
 WHEN NOT MATCHED BY TARGET THEN
   -- La insertamos.
-  INSERT (id_transaccion, fecha, concepto, importe, origen, tipo_movimiento, categoria, anio, mes, anio_mes)
-  VALUES (S.id_transaccion, S.fecha, S.concepto, S.importe, S.origen, S.tipo_movimiento, S.categoria, S.anio, S.mes, S.anio_mes);
+  INSERT (transaccion_id, fecha, concepto, importe, origen, tipo_movimiento, categoria, anio, mes, anio_mes)
+  VALUES (S.transaccion_id, S.fecha, S.concepto, S.importe, S.origen, S.tipo_movimiento, S.categoria, S.anio, S.mes, S.anio_mes);
 
 -- ¿Qué hacemos si una fila YA existe? No hacemos nada.
 -- Podríamos añadir una cláusula "WHEN MATCHED THEN UPDATE SET ...", pero para este caso no es necesario.

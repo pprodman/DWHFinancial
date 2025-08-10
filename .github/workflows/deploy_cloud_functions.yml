@@ -63,13 +63,10 @@ jobs:
         entry_point: 'main'
         region: '${{ env.REGION }}'
         # El activador (trigger) de Eventarc que vigila la carpeta PENDING de la cuenta
-        trigger_event_filters: |
-          [
-            {"attribute": "type", "value": "google.cloud.audit.log.v1.written"},
-            {"attribute": "serviceName", "value": "drive.googleapis.com"},
-            {"attribute": "methodName", "value": "google.apps.drive.v2.File.patch"},
-            {"attribute": "resourceName", "value": "//drive.googleapis.com/files/${{ env.FOLDER_ID_PENDING_ACCOUNT }}"}
-          ]
+        event_trigger_type: 'google.cloud.audit.log.v1.written'
+        event_trigger_resource: 'drive.googleapis.com'
+        # Para filtrar por una carpeta específica, usamos un parámetro adicional en 'event_trigger_resource'
+        event_trigger_service: "projects/${{ env.PROJECT_ID }}/logs/cloudaudit.googleapis.com%2Factivity?resource.type=drive.googleapis.com/File&resource.name=//drive.googleapis.com/files/${{ env.FOLDER_ID_PENDING_ACCOUNT }}"
         # Las variables de entorno que el código Python leerá
         env_vars: |
           GCP_PROJECT=${{ env.PROJECT_ID }}
@@ -87,13 +84,9 @@ jobs:
         entry_point: 'main'
         region: '${{ env.REGION }}'
         # El activador (trigger) de Eventarc que vigila la carpeta PENDING de la tarjeta
-        trigger_event_filters: |
-          [
-            {"attribute": "type", "value": "google.cloud.audit.log.v1.written"},
-            {"attribute": "serviceName", "value": "drive.googleapis.com"},
-            {"attribute": "methodName", "value": "google.apps.drive.v2.File.patch"},
-            {"attribute": "resourceName", "value": "//drive.googleapis.com/files/${{ env.FOLDER_ID_PENDING_CARD }}"}
-          ]
+        event_trigger_type: 'google.cloud.audit.log.v1.written'
+        event_trigger_resource: 'drive.googleapis.com'
+        event_trigger_service: "projects/${{ env.PROJECT_ID }}/logs/cloudaudit.googleapis.com%2Factivity?resource.type=drive.googleapis.com/File&resource.name=//drive.googleapis.com/files/${{ env.FOLDER_ID_PENDING_CARD }}"
         # Las variables de entorno para esta función
         env_vars: |
           GCP_PROJECT=${{ env.PROJECT_ID }}
@@ -110,9 +103,10 @@ jobs:
         source_dir: './gcs_to_bq'
         entry_point: 'main'
         region: '${{ env.REGION }}'
-        # El activador (trigger) que vigila el bucket de GCS
-        trigger_event: 'google.storage.object.finalize'
-        trigger_resource: 'projects/_/buckets/${{ env.GCS_BUCKET }}'
+        # CORRECCIÓN: Usamos la sintaxis moderna y explícita para el trigger de GCS
+        event_trigger_type: 'google.cloud.storage.object.v1.finalized'
+        # El bucket específico que estamos vigilando
+        event_trigger_resource: "projects/_/buckets/${{ env.GCS_BUCKET }}"
         env_vars: |
           GCP_PROJECT=${{ env.PROJECT_ID }}
           BIGQUERY_DATASET=${{ env.BIGQUERY_DATASET }}
@@ -128,8 +122,5 @@ jobs:
     - name: Run BigQuery Transformation Script
       run: |
         echo "Ejecutando script de transformación en BigQuery..."
-        # Reemplazamos la variable del ID de proyecto en el archivo SQL antes de ejecutarlo
-        sed -i 's/TU_ID_DE_PROYECTO/${{ env.PROJECT_ID }}/g' sql/transform_and_categorize.sql
-        
-        # Ejecutamos el script
-        bq query --use_legacy_sql=false < sql/transform_and_categorize.sql
+        sed -i 's/675312276583/${{ env.PROJECT_ID }}/g' sql/A0_raw_to_standard.sql
+        bq query --use_legacy_sql=false < sql/A0_raw_to_standard.sql

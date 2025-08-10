@@ -110,7 +110,8 @@ def main(event: dict, context: object):
     json_data = final_df.to_json(orient='records', lines=True, date_format='iso')
     storage_client = storage.Client()
     bucket = storage_client.bucket(BUCKET_NAME)
-    destination_blob_name = f"cuenta/{Path(file_name).stem}_{context.event_id}.jsonl"
+    entidad = 'BANKINTER'
+    destination_blob_name = f"{entidad}/CUENTA/{Path(file_name).stem}_{context.event_id}.jsonl"
     
     blob = bucket.blob(destination_blob_name)
     blob.upload_from_string(json_data, content_type='application/jsonl+json')

@@ -15,7 +15,7 @@ env:
   BIGQUERY_DATASET: 'financial_data'
   BIGQUERY_TABLE_RAW: 'data_raw'
   DRIVE_SECRET_NAME: 'drive-service-account-key'
-  REGION: 'europe-west1'
+  REGION: 'eu'
   FOLDER_ID_PENDING_ACCOUNT: '1P1O9XUaFA7pPmXufRN0xMIfU94zvYxPS'
   FOLDER_ID_PROCESSED_ACCOUNT: '18JQrL2GxmRFHVl8xVa0SYj_nhdpNLT18'
   FOLDER_ID_PENDING_CARD: '1cXsLTPgcSwBB-TQPxXq-eio12MZAPIbm'
@@ -50,7 +50,7 @@ jobs:
           --region=${{ env.REGION }} \
           --source=./cloud_functions/drive_to_gcs_account_statements \
           --entry-point=main \
-          --trigger-event-filters="type=google.cloud.audit.log.v1.written,serviceName=drive.googleapis.com,resourceName=//drive.googleapis.com/files/${{ env.FOLDER_ID_PENDING_ACCOUNT }}" \
+          --trigger-event-filters="type=google.cloud.audit.log.v1.written,serviceName=drive.googleapis.com,methodName=google.apps.drive.v2.FileService.CreateFile,resourceName=//drive.googleapis.com/files/${{ env.FOLDER_ID_PENDING_ACCOUNT }}" \
           --set-env-vars="GCP_PROJECT=${{ env.PROJECT_ID }},BUCKET_NAME=${{ env.GCS_BUCKET }},DRIVE_SECRET_NAME=${{ env.DRIVE_SECRET_NAME }},FOLDER_ID_PROCESSED_ACCOUNT=${{ env.FOLDER_ID_PROCESSED_ACCOUNT }}"
 
     - name: Deploy ETL-TARJETA-to-GCS Function
@@ -61,7 +61,7 @@ jobs:
           --region=${{ env.REGION }} \
           --source=./cloud_functions/drive_to_gcs_card_payments \
           --entry-point=main \
-          --trigger-event-filters="type=google.cloud.audit.log.v1.written,serviceName=drive.googleapis.com,resourceName=//drive.googleapis.com/files/${{ env.FOLDER_ID_PENDING_CARD }}" \
+          --trigger-event-filters="type=google.cloud.audit.log.v1.written,serviceName=drive.googleapis.com,methodName=google.apps.drive.v2.FileService.CreateFile,resourceName=//drive.googleapis.com/files/${{ env.FOLDER_ID_PENDING_CARD }}" \
           --set-env-vars="GCP_PROJECT=${{ env.PROJECT_ID }},BUCKET_NAME=${{ env.GCS_BUCKET }},DRIVE_SECRET_NAME=${{ env.DRIVE_SECRET_NAME }},FOLDER_ID_PROCESSED_CARD=${{ env.FOLDER_ID_PROCESSED_CARD }}"
 
     - name: Deploy GCS-to-BigQuery Function
@@ -78,5 +78,4 @@ jobs:
     - name: Run BigQuery Transformation Script
       run: |
         echo "Ejecutando script de transformación en BigQuery..."
-        # El comando 'sed' ya no es necesario si el archivo SQL no tiene el proyecto hardcodeado
         bq query --use_legacy_sql=false < queries/A0_raw_to_standard.sql

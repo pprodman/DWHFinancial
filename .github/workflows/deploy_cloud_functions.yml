@@ -16,7 +16,6 @@ env:
   BIGQUERY_TABLE_RAW: 'data_raw'
   DRIVE_SECRET_NAME: 'drive-service-account-key'
   REGION: 'europe-west1'
-
   FOLDER_ID_PENDING_ACCOUNT: '1P1O9XUaFA7pPmXufRN0xMIfU94zvYxPS'
   FOLDER_ID_PROCESSED_ACCOUNT: '18JQrL2GxmRFHVl8xVa0SYj_nhdpNLT18'
   FOLDER_ID_PENDING_CARD: '1cXsLTPgcSwBB-TQPxXq-eio12MZAPIbm'
@@ -24,6 +23,7 @@ env:
 
 jobs:
   deploy-pipeline:
+    name: Deploy Full Pipeline
     runs-on: ubuntu-latest
     permissions:
       contents: 'read'
@@ -33,7 +33,6 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    # Autenticación con GCP
     - name: Authenticate to Google Cloud
       uses: google-github-actions/auth@v2
       with:
@@ -43,12 +42,6 @@ jobs:
     - name: Set up Cloud SDK
       uses: google-github-actions/setup-gcloud@v2
 
-    - name: Configure gcloud project
-      run: gcloud config set project ${{ env.PROJECT_ID }}
-
-    # ----------------------
-    # Deploy ETL CUENTA
-    # ----------------------
     - name: Deploy ETL-CUENTA-to-GCS Function
       run: |
         gcloud functions deploy etl-cuenta-to-gcs \
@@ -57,14 +50,9 @@ jobs:
           --region=${{ env.REGION }} \
           --source=./cloud_functions/drive_to_gcs_account_statements \
           --entry-point=main \
-          --trigger-event-filters=type=google.cloud.audit.log.v1.written \
-          --trigger-event-filters=serviceName=drive.googleapis.com \
-          --trigger-event-filters=resourceName=//drive.googleapis.com/files/${{ env.FOLDER_ID_PENDING_ACCOUNT }} \
-          --set-env-vars=GCP_PROJECT=${{ env.PROJECT_ID }},BUCKET_NAME=${{ env.GCS_BUCKET }},DRIVE_SECRET_NAME=${{ env.DRIVE_SECRET_NAME }},FOLDER_ID_PROCESSED_ACCOUNT=${{ env.FOLDER_ID_PROCESSED_ACCOUNT }}
+          --trigger-event-filters="type=google.cloud.audit.log.v1.written,serviceName=drive.googleapis.com,resourceName=//drive.googleapis.com/files/${{ env.FOLDER_ID_PENDING_ACCOUNT }}" \
+          --set-env-vars="GCP_PROJECT=${{ env.PROJECT_ID }},BUCKET_NAME=${{ env.GCS_BUCKET }},DRIVE_SECRET_NAME=${{ env.DRIVE_SECRET_NAME }},FOLDER_ID_PROCESSED_ACCOUNT=${{ env.FOLDER_ID_PROCESSED_ACCOUNT }}"
 
-    # ----------------------
-    # Deploy ETL TARJETA
-    # ----------------------
     - name: Deploy ETL-TARJETA-to-GCS Function
       run: |
         gcloud functions deploy etl-tarjeta-to-gcs \
@@ -73,14 +61,9 @@ jobs:
           --region=${{ env.REGION }} \
           --source=./cloud_functions/drive_to_gcs_card_payments \
           --entry-point=main \
-          --trigger-event-filters=type=google.cloud.audit.log.v1.written \
-          --trigger-event-filters=serviceName=drive.googleapis.com \
-          --trigger-event-filters=resourceName=//drive.googleapis.com/files/${{ env.FOLDER_ID_PENDING_CARD }} \
-          --set-env-vars=GCP_PROJECT=${{ env.PROJECT_ID }},BUCKET_NAME=${{ env.GCS_BUCKET }},DRIVE_SECRET_NAME=${{ env.DRIVE_SECRET_NAME }},FOLDER_ID_PROCESSED_CARD=${{ env.FOLDER_ID_PROCESSED_CARD }}
+          --trigger-event-filters="type=google.cloud.audit.log.v1.written,serviceName=drive.googleapis.com,resourceName=//drive.googleapis.com/files/${{ env.FOLDER_ID_PENDING_CARD }}" \
+          --set-env-vars="GCP_PROJECT=${{ env.PROJECT_ID }},BUCKET_NAME=${{ env.GCS_BUCKET }},DRIVE_SECRET_NAME=${{ env.DRIVE_SECRET_NAME }},FOLDER_ID_PROCESSED_CARD=${{ env.FOLDER_ID_PROCESSED_CARD }}"
 
-    # ----------------------
-    # Deploy GCS -> BigQuery
-    # ----------------------
     - name: Deploy GCS-to-BigQuery Function
       run: |
         gcloud functions deploy etl-gcs-to-bq \
@@ -89,15 +72,11 @@ jobs:
           --region=${{ env.REGION }} \
           --source=./cloud_functions/gcs_to_bq \
           --entry-point=main \
-          --trigger-event-filters=type=google.cloud.storage.object.v1.finalized \
-          --trigger-event-filters=bucket=${{ env.GCS_BUCKET }} \
-          --set-env-vars=GCP_PROJECT=${{ env.PROJECT_ID }},BIGQUERY_DATASET=${{ env.BIGQUERY_DATASET }},BIGQUERY_TABLE_RAW=${{ env.BIGQUERY_TABLE_RAW }}
+          --trigger-event-filters="type=google.cloud.storage.object.v1.finalized,bucket=${{ env.GCS_BUCKET }}" \
+          --set-env-vars="GCP_PROJECT=${{ env.PROJECT_ID }},BIGQUERY_DATASET=${{ env.BIGQUERY_DATASET }},BIGQUERY_TABLE_RAW=${{ env.BIGQUERY_TABLE_RAW }}"
 
-    # ----------------------
-    # Transformación en BigQuery
-    # ----------------------
     - name: Run BigQuery Transformation Script
       run: |
         echo "Ejecutando script de transformación en BigQuery..."
-        sed -i "s/${{ env.PROJECT_NUMBER }}/${{ env.PROJECT_ID }}/g" queries/A0_raw_to_standard.sql
+        # El comando 'sed' ya no es necesario si el archivo SQL no tiene el proyecto hardcodeado
         bq query --use_legacy_sql=false < queries/A0_raw_to_standard.sql

@@ -76,6 +76,18 @@ jobs:
           --trigger-location=eu \
           --set-env-vars="GCP_PROJECT=${{ env.PROJECT_ID }},BIGQUERY_DATASET=${{ env.BIGQUERY_DATASET }},BIGQUERY_TABLE_RAW=${{ env.BIGQUERY_TABLE_RAW }}"
 
+    # ======================================================
+    # PASO DE DEPURACIÓN TEMPORAL - AÑADE ESTE BLOQUE
+    # ======================================================
+    - name: "DEBUG: Verificar permisos de la Cuenta de Servicio"
+      run: |
+        echo "Verificando los roles asignados a github-actions-deployer@${{ env.PROJECT_ID }}.iam.gserviceaccount.com..."
+        gcloud projects get-iam-policy ${{ env.PROJECT_ID }} \
+          --flatten="bindings[].members" \
+          --filter="bindings.members:github-actions-deployer@${{ env.PROJECT_ID }}.iam.gserviceaccount.com" \
+          --format="table(bindings.role)"
+    # ======================================================
+
     - name: Run BigQuery Transformation Script
       run: |
         echo "Ejecutando script de transformación en BigQuery..."

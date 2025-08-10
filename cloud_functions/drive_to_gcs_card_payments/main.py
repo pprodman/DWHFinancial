@@ -111,8 +111,8 @@ def main(event: dict, context: object):
     json_data = final_df.to_json(orient='records', lines=True, date_format='iso')
     storage_client = storage.Client()
     bucket = storage_client.bucket(BUCKET_NAME)
-    # CAMBIO CLAVE 5: Guardar en una subcarpeta 'tarjeta' en GCS para mayor orden
-    destination_blob_name = f"tarjeta/{Path(file_name).stem}_{context.event_id}.jsonl"
+    entidad = 'BANKINTER'
+    destination_blob_name = f"{entidad}/TARJETA/{Path(file_name).stem}_{context.event_id}.jsonl"
     
     blob = bucket.blob(destination_blob_name)
     blob.upload_from_string(json_data, content_type='application/jsonl+json')

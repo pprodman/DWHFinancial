@@ -1,17 +1,13 @@
 # yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
 
-# Nombre del workflow, aparecerá en la pestaña "Actions" de GitHub
 name: Deploy Full Financial Pipeline
 
-# --- ACTIVADOR (TRIGGER) ---
 on:
   push:
     branches:
       - main
-  # Opcional: Permite ejecutarlo manualmente desde la UI de GitHub
   workflow_dispatch:
 
-# --- VARIABLES DE ENTORNO GLOBALES ---
 env:
   PROJECT_ID: 'dwhfinancial'
   PROJECT_NUMBER: '675312276583'
@@ -21,7 +17,6 @@ env:
   DRIVE_SECRET_NAME: 'drive-service-account-key'
   REGION: 'europe-west1'
 
-  # IDs de carpetas de Google Drive
   FOLDER_ID_PENDING_ACCOUNT: '1P1O9XUaFA7pPmXufRN0xMIfU94zvYxPS'
   FOLDER_ID_PROCESSED_ACCOUNT: '18JQrL2GxmRFHVl8xVa0SYj_nhdpNLT18'
   FOLDER_ID_PENDING_CARD: '1cXsLTPgcSwBB-TQPxXq-eio12MZAPIbm'
@@ -29,93 +24,80 @@ env:
 
 jobs:
   deploy-pipeline:
-    name: Deploy to Google Cloud
     runs-on: ubuntu-latest
-
-    # Permisos necesarios para la autenticación con Workload Identity Federation
     permissions:
       contents: 'read'
       id-token: 'write'
 
     steps:
-    # 1. Checkout del código del repositorio
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    # 2. Autenticación con Google Cloud
+    # Autenticación con GCP
     - name: Authenticate to Google Cloud
-      uses: 'google-github-actions/auth@v2'
+      uses: google-github-actions/auth@v2
       with:
         workload_identity_provider: 'projects/${{ env.PROJECT_NUMBER }}/locations/global/workloadIdentityPools/github-pool/providers/github-provider'
         service_account: 'github-actions-deployer@${{ env.PROJECT_ID }}.iam.gserviceaccount.com'
 
-    # 3. Despliegue de la función ETL de CUENTA
-    - name: Deploy ETL-CUENTA-to-GCS Function
-      uses: 'google-github-actions/deploy-cloud-functions@v2'
-      with:
-        gen2: true
-        name: 'etl-cuenta-to-gcs'
-        runtime: 'python311'
-        source_dir: './cloud_functions/drive_to_gcs_account_statements'
-        entry_point: 'main'
-        region: '${{ env.REGION }}'
-        event_trigger_type: 'google.cloud.audit.log.v1.written'
-        event_filters: |
-          serviceName=drive.googleapis.com
-          resourceName=//drive.googleapis.com/files/${{ env.FOLDER_ID_PENDING_ACCOUNT }}
-        env_vars: |
-          GCP_PROJECT=${{ env.PROJECT_ID }}
-          BUCKET_NAME=${{ env.GCS_BUCKET }}
-          DRIVE_SECRET_NAME=${{ env.DRIVE_SECRET_NAME }}
-          FOLDER_ID_PROCESSED_ACCOUNT=${{ env.FOLDER_ID_PROCESSED_ACCOUNT }}
-
-    # 4. Despliegue de la función ETL de TARJETA
-    - name: Deploy ETL-TARJETA-to-GCS Function
-      uses: 'google-github-actions/deploy-cloud-functions@v2'
-      with:
-        gen2: true
-        name: 'etl-tarjeta-to-gcs'
-        runtime: 'python311'
-        source_dir: './cloud_functions/drive_to_gcs_card_payments'
-        entry_point: 'main'
-        region: '${{ env.REGION }}'
-        event_trigger_type: 'google.cloud.audit.log.v1.written'
-        event_filters: |
-          serviceName=drive.googleapis.com
-          resourceName=//drive.googleapis.com/files/${{ env.FOLDER_ID_PENDING_CARD }}
-        env_vars: |
-          GCP_PROJECT=${{ env.PROJECT_ID }}
-          BUCKET_NAME=${{ env.GCS_BUCKET }}
-          DRIVE_SECRET_NAME=${{ env.DRIVE_SECRET_NAME }}
-          FOLDER_ID_PROCESSED_CARD=${{ env.FOLDER_ID_PROCESSED_CARD }}
-
-    # 5. Despliegue de la función de carga a BigQuery
-    - name: Deploy GCS-to-BigQuery Function
-      uses: 'google-github-actions/deploy-cloud-functions@v2'
-      with:
-        gen2: true
-        name: 'etl-gcs-to-bq'
-        runtime: 'python311'
-        source_dir: './cloud_functions/gcs_to_bq'
-        entry_point: 'main'
-        region: '${{ env.REGION }}'
-        event_trigger_type: 'google.cloud.storage.object.v1.finalized'
-        event_filters: bucket=${{ env.GCS_BUCKET }}
-        env_vars: |
-          GCP_PROJECT=${{ env.PROJECT_ID }}
-          BIGQUERY_DATASET=${{ env.BIGQUERY_DATASET }}
-          BIGQUERY_TABLE_RAW=${{ env.BIGQUERY_TABLE_RAW }}
-
-    # --- SECCIÓN DE TRANSFORMACIÓN ---
-
-    # 6. Configurar gcloud para poder usar el comando 'bq'
     - name: Set up Cloud SDK
       uses: google-github-actions/setup-gcloud@v2
 
-    # 7. Ejecutar el script SQL de transformación
+    - name: Configure gcloud project
+      run: gcloud config set project ${{ env.PROJECT_ID }}
+
+    # ----------------------
+    # Deploy ETL CUENTA
+    # ----------------------
+    - name: Deploy ETL-CUENTA-to-GCS Function
+      run: |
+        gcloud functions deploy etl-cuenta-to-gcs \
+          --gen2 \
+          --runtime=python311 \
+          --region=${{ env.REGION }} \
+          --source=./cloud_functions/drive_to_gcs_account_statements \
+          --entry-point=main \
+          --trigger-event-filters=type=google.cloud.audit.log.v1.written \
+          --trigger-event-filters=serviceName=drive.googleapis.com \
+          --trigger-event-filters=resourceName=//drive.googleapis.com/files/${{ env.FOLDER_ID_PENDING_ACCOUNT }} \
+          --set-env-vars=GCP_PROJECT=${{ env.PROJECT_ID }},BUCKET_NAME=${{ env.GCS_BUCKET }},DRIVE_SECRET_NAME=${{ env.DRIVE_SECRET_NAME }},FOLDER_ID_PROCESSED_ACCOUNT=${{ env.FOLDER_ID_PROCESSED_ACCOUNT }}
+
+    # ----------------------
+    # Deploy ETL TARJETA
+    # ----------------------
+    - name: Deploy ETL-TARJETA-to-GCS Function
+      run: |
+        gcloud functions deploy etl-tarjeta-to-gcs \
+          --gen2 \
+          --runtime=python311 \
+          --region=${{ env.REGION }} \
+          --source=./cloud_functions/drive_to_gcs_card_payments \
+          --entry-point=main \
+          --trigger-event-filters=type=google.cloud.audit.log.v1.written \
+          --trigger-event-filters=serviceName=drive.googleapis.com \
+          --trigger-event-filters=resourceName=//drive.googleapis.com/files/${{ env.FOLDER_ID_PENDING_CARD }} \
+          --set-env-vars=GCP_PROJECT=${{ env.PROJECT_ID }},BUCKET_NAME=${{ env.GCS_BUCKET }},DRIVE_SECRET_NAME=${{ env.DRIVE_SECRET_NAME }},FOLDER_ID_PROCESSED_CARD=${{ env.FOLDER_ID_PROCESSED_CARD }}
+
+    # ----------------------
+    # Deploy GCS -> BigQuery
+    # ----------------------
+    - name: Deploy GCS-to-BigQuery Function
+      run: |
+        gcloud functions deploy etl-gcs-to-bq \
+          --gen2 \
+          --runtime=python311 \
+          --region=${{ env.REGION }} \
+          --source=./cloud_functions/gcs_to_bq \
+          --entry-point=main \
+          --trigger-event-filters=type=google.cloud.storage.object.v1.finalized \
+          --trigger-event-filters=bucket=${{ env.GCS_BUCKET }} \
+          --set-env-vars=GCP_PROJECT=${{ env.PROJECT_ID }},BIGQUERY_DATASET=${{ env.BIGQUERY_DATASET }},BIGQUERY_TABLE_RAW=${{ env.BIGQUERY_TABLE_RAW }}
+
+    # ----------------------
+    # Transformación en BigQuery
+    # ----------------------
     - name: Run BigQuery Transformation Script
       run: |
         echo "Ejecutando script de transformación en BigQuery..."
-        # Reemplaza el ID de proyecto hardcodeado por el de la variable de entorno
         sed -i "s/${{ env.PROJECT_NUMBER }}/${{ env.PROJECT_ID }}/g" queries/A0_raw_to_standard.sql
         bq query --use_legacy_sql=false < queries/A0_raw_to_standard.sql

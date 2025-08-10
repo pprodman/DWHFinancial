@@ -73,6 +73,7 @@ jobs:
           --source=./cloud_functions/gcs_to_bq \
           --entry-point=main \
           --trigger-event-filters="type=google.cloud.storage.object.v1.finalized,bucket=${{ env.GCS_BUCKET }}" \
+          --trigger-location=eu \
           --set-env-vars="GCP_PROJECT=${{ env.PROJECT_ID }},BIGQUERY_DATASET=${{ env.BIGQUERY_DATASET }},BIGQUERY_TABLE_RAW=${{ env.BIGQUERY_TABLE_RAW }}"
 
     - name: Run BigQuery Transformation Script

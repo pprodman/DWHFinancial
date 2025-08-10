@@ -8,6 +8,12 @@ on:
     branches:
       - main
 
+# --- VARIABLES DE ENTORNO GLOBALES ---
+env:
+  PROJECT_ID: 'dwhfinancial'
+  PROJECT_NUMBER: '675312276583'
+  GCS_BUCKET: 'dwhfinancial-repo'
+
 jobs:
   mirror:
     name: Mirror to Google Cloud Storage
@@ -28,8 +34,8 @@ jobs:
       uses: 'google-github-actions/auth@v2'
       with:
         # Reemplaza con el nombre completo de tu Workload Identity Pool Provider
-        workload_identity_provider: 'projects/675312276583/locations/global/workloadIdentityPools/github-pool/providers/github-provider'
-        service_account: 'github-actions-deployer@dwhfinancial.iam.gserviceaccount.com'
+        workload_identity_provider: 'projects/${{ env.PROJECT_NUMBER }}/locations/global/workloadIdentityPools/github-pool/providers/github-provider'
+        service_account: 'github-actions-deployer@${{ env.PROJECT_ID }}.iam.gserviceaccount.com'
 
     # --- Paso 3: Configurar gcloud/gsutil ---
     # Necesitamos este paso para poder usar el comando gsutil
@@ -41,4 +47,4 @@ jobs:
     - name: Sync repository to GCS bucket
       run: |
         echo "Sincronizando el repositorio con el bucket de GCS..."
-        gsutil -m rsync -d -r . gs://dwhfinancial-data-repo
+        gsutil -m rsync -d -r . gs://${{ env.GCS_BUCKET }}

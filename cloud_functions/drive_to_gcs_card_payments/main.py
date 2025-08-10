@@ -78,7 +78,7 @@ def main(event: dict, context: object):
     
     # 3: Lógica de procesamiento de Pandas específica para la TARJETA
     try:
-        df = pd.read_excel('tarjeta_julio.xlsx', engine='openpyxl', skiprows=6, header=None)
+        df = pd.read_excel(file_bytes, engine='openpyxl', skiprows=6, header=None)
 
         # Renombrar columnas para facilitar el manejo
         df.columns = ["fecha", "concepto", "importe"]

@@ -59,7 +59,7 @@ jobs:
       with:
         name: 'etl-cuenta-to-gcs'
         runtime: 'python311'
-        source_dir: './drive_to_gcs_account_statements'
+        source_dir: './cloud_functions/drive_to_gcs_account_statements'
         entry_point: 'main'
         region: '${{ env.REGION }}'
         # El activador (trigger) de Eventarc que vigila la carpeta PENDING de la cuenta
@@ -80,7 +80,7 @@ jobs:
       with:
         name: 'etl-tarjeta-to-gcs'
         runtime: 'python311'
-        source_dir: './drive_to_gcs_card_payments'
+        source_dir: './cloud_functions/drive_to_gcs_card_payments'
         entry_point: 'main'
         region: '${{ env.REGION }}'
         # El activador (trigger) de Eventarc que vigila la carpeta PENDING de la tarjeta
@@ -100,7 +100,7 @@ jobs:
       with:
         name: 'etl-gcs-to-bq'
         runtime: 'python311'
-        source_dir: './gcs_to_bq'
+        source_dir: './cloud_functions/gcs_to_bq'
         entry_point: 'main'
         region: '${{ env.REGION }}'
         # CORRECCIÓN: Usamos la sintaxis moderna y explícita para el trigger de GCS
@@ -122,5 +122,5 @@ jobs:
     - name: Run BigQuery Transformation Script
       run: |
         echo "Ejecutando script de transformación en BigQuery..."
-        sed -i 's/675312276583/${{ env.PROJECT_ID }}/g' sql/A0_raw_to_standard.sql
-        bq query --use_legacy_sql=false < sql/A0_raw_to_standard.sql
+        sed -i 's/675312276583/${{ env.PROJECT_ID }}/g' queries/A0_raw_to_standard.sql
+        bq query --use_legacy_sql=false < queries/A0_raw_to_standard.sql

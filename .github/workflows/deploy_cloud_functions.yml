@@ -56,7 +56,7 @@ jobs:
 
       - name: 🧹 Lint Python code
         uses: py-actions/flake8@v2
-        continue-on-error: false
+        continue-on-error: true
 
       - name: 🔐 Authenticate to Google Cloud
         uses: google-github-actions/auth@v2

@@ -49,6 +49,11 @@ jobs:
         with:
           python-version: "3.11"
 
+      - name: 🧹 Auto-fix Python code style
+        run: |
+          pip install ruff
+          ruff --fix cloud_functions/**/*.py
+
       - name: 🧹 Lint Python code
         uses: py-actions/flake8@v2
         continue-on-error: false

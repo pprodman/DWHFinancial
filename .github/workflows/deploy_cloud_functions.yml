@@ -51,8 +51,8 @@ jobs:
 
       - name: 🧹 Auto-fix Python code style
         run: |
-          pip install ruff
-          ruff --fix cloud_functions/**/*.py
+          pip install "ruff>=0.3.0"
+          ruff check cloud_functions/ --fix
 
       - name: 🧹 Lint Python code
         uses: py-actions/flake8@v2

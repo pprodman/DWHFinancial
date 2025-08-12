@@ -26,7 +26,7 @@ def main(event: dict, context: object):
         return "Formato de evento incorrecto", 400
 
     # Opcional: Ignorar archivos que no estén en las subcarpetas esperadas
-    if not (file_name.startswith('cuenta/') or file_name.startswith('tarjeta/')):
+    if not (file_name.startswith('CUENTA/') or file_name.startswith('TARJETA/')):
         logging.info(f"El archivo {file_name} no está en una carpeta de datos. Se ignora.")
         return "Archivo ignorado", 200
 

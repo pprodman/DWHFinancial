@@ -21,7 +21,7 @@ def main(event: dict, context: object):
         logging.error(f"El evento no tiene el formato esperado: {event}. Error: {e}")
         return "Formato de evento incorrecto", 400
 
-    if not (file_name.startswith('bankinter/cuenta/') or file_name.startswith('bankinter/tarjeta/')):
+    if not (file_name.startswith('BANKINTER/CUENTA/') or file_name.startswith('BANKINTER/TARJETA/')):
         logging.info(f"El archivo {file_name} no está en una carpeta de datos procesados. Se ignora.")
         return "Archivo ignorado", 200
 

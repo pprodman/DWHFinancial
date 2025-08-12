@@ -1,15 +1,12 @@
 # yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
 
-name: Deploy Financial Data Pipeline (Advanced)
+name: Deploy Full Financial Pipeline
 
 on:
-  workflow_dispatch:
   push:
-    branches: [main]
-
-concurrency:
-  group: Cloud-Functions-${{ github.ref }}
-  cancel-in-progress: true
+    branches:
+      - main
+  workflow_dispatch:
 
 env:
   PROJECT_ID: 'dwhfinancial'
@@ -19,152 +16,69 @@ env:
   BIGQUERY_TABLE_RAW: 'data_raw'
   DRIVE_SECRET_NAME: 'drive-service-account-key'
   REGION: 'europe-west1'
+  DRIVE_CHECK_TOPIC: 'drive-check-topic'
+
   FOLDER_ID_PENDING_ACCOUNT: '1P1O9XUaFA7pPmXufRN0xMIfU94zvYxPS'
   FOLDER_ID_PROCESSED_ACCOUNT: '18JQrL2GxmRFHVl8xVa0SYj_nhdpNLT18'
   FOLDER_ID_PENDING_CARD: '1cXsLTPgcSwBB-TQPxXq-eio12MZAPIbm'
   FOLDER_ID_PROCESSED_CARD: '191Xlqc_YUTzOOvlw56pQxfEuBZOzrjnN'
-  DRIVE_CHECK_TOPIC: 'drive-check-topic'
 
 jobs:
-  # ------------------------------------------------------
-  # JOB 1: Despliegue condicional de funciones Cloud
-  # ------------------------------------------------------
-  deploy-functions:
-    name: 🚀 Deploy Cloud Functions
+  deploy-pipeline:
+    name: Deploy Full Pipeline
     runs-on: ubuntu-latest
     permissions:
-      contents: read
-      id-token: write
-
-    outputs:
-      sql_changed: ${{ steps.changes.outputs.sql_transform }}
-      functions_changed: ${{ steps.changes.outputs.accounts_function == 'true' || steps.changes.outputs.cards_function == 'true' || steps.changes.outputs.bq_load_function == 'true' }}
+      contents: 'read'
+      id-token: 'write'
 
     steps:
-      - name: 🔁 Checkout code
-        uses: actions/checkout@v4
+    - name: Checkout repository
+      uses: actions/checkout@v4
 
-      - name: 🐍 Set up Python 3.11
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.11"
+    - name: Authenticate to Google Cloud
+      uses: google-github-actions/auth@v2
+      with:
+        workload_identity_provider: 'projects/${{ env.PROJECT_NUMBER }}/locations/global/workloadIdentityPools/github-pool/providers/github-provider'
+        service_account: 'github-actions-deployer@${{ env.PROJECT_ID }}.iam.gserviceaccount.com'
 
-      - name: 🧹 Auto-fix Python code style
-        run: |
-          pip install "ruff>=0.3.0"
-          ruff check cloud_functions/ --fix
+    - name: Set up Cloud SDK
+      uses: google-github-actions/setup-gcloud@v2
 
-      - name: 🧹 Lint Python code
-        uses: py-actions/flake8@v2
-        continue-on-error: true
+    - name: Deploy ETL-CUENTA-to-GCS Function
+      run: |
+        gcloud functions deploy etl-cuenta-to-gcs \
+          --gen2 \
+          --runtime=python311 \
+          --region=${{ env.REGION }} \
+          --source=./cloud_functions/drive_to_gcs_account_statements \
+          --entry-point=main \
+          --trigger-topic=${{ env.DRIVE_CHECK_TOPIC }} \
+          --set-env-vars="GCP_PROJECT=${{ env.PROJECT_ID }},BUCKET_NAME=${{ env.GCS_BUCKET }},DRIVE_SECRET_NAME=${{ env.DRIVE_SECRET_NAME }},FOLDER_ID_PENDING_ACCOUNT=${{ env.FOLDER_ID_PENDING_ACCOUNT }},FOLDER_ID_PROCESSED_ACCOUNT=${{ env.FOLDER_ID_PROCESSED_ACCOUNT }}"
 
-      - name: 🔐 Authenticate to Google Cloud
-        uses: google-github-actions/auth@v2
-        with:
-          workload_identity_provider: 'projects/${{ env.PROJECT_NUMBER }}/locations/global/workloadIdentityPools/github-pool/providers/github-provider'
-          service_account: 'github-actions-deployer@${{ env.PROJECT_ID }}.iam.gserviceaccount.com'
+    - name: Deploy ETL-TARJETA-to-GCS Function
+      run: |
+        gcloud functions deploy etl-tarjeta-to-gcs \
+          --gen2 \
+          --runtime=python311 \
+          --region=${{ env.REGION }} \
+          --source=./cloud_functions/drive_to_gcs_card_payments \
+          --entry-point=main \
+          --trigger-topic=${{ env.DRIVE_CHECK_TOPIC }} \
+          --set-env-vars="GCP_PROJECT=${{ env.PROJECT_ID }},BUCKET_NAME=${{ env.GCS_BUCKET }},DRIVE_SECRET_NAME=${{ env.DRIVE_SECRET_NAME }},FOLDER_ID_PENDING_CARD=${{ env.FOLDER_ID_PENDING_CARD }},FOLDER_ID_PROCESSED_CARD=${{ env.FOLDER_ID_PROCESSED_CARD }}"
 
-      - name: ☁️ Set up gcloud
-        uses: google-github-actions/setup-gcloud@v2
+    - name: Deploy GCS-to-BigQuery Function
+      run: |
+        gcloud functions deploy etl-gcs-to-bq \
+          --gen2 \
+          --runtime=python311 \
+          --region=${{ env.REGION }} \
+          --source=./cloud_functions/gcs_to_bq \
+          --entry-point=main \
+          --trigger-event-filters="type=google.cloud.storage.object.v1.finalized,bucket=${{ env.GCS_BUCKET }}" \
+          --trigger-location=eu \
+          --set-env-vars="GCP_PROJECT=${{ env.PROJECT_ID }},BIGQUERY_DATASET=${{ env.BIGQUERY_DATASET }},BIGQUERY_TABLE_RAW=${{ env.BIGQUERY_TABLE_RAW }}"
 
-      - name: 🔍 Check for changed files
-        uses: dorny/paths-filter@v3
-        id: changes
-        with:
-          filters: |
-            accounts_function:
-              - 'cloud_functions/drive_to_gcs_account_statements/**'
-            cards_function:
-              - 'cloud_functions/drive_to_gcs_card_payments/**'
-            bq_load_function:
-              - 'cloud_functions/gcs_to_bq/**'
-            sql_transform:
-              - 'queries/**'
-
-      - name: 📤 Deploy ETL-CUENTA-to-GCS
-        if: steps.changes.outputs.accounts_function == 'true'
-        run: |
-          gcloud functions deploy etl-cuenta-to-gcs \
-            --gen2 \
-            --runtime=python311 \
-            --region=${{ env.REGION }} \
-            --source=./cloud_functions/drive_to_gcs_account_statements \
-            --entry-point=main \
-            --trigger-topic=${{ env.DRIVE_CHECK_TOPIC }} \
-            --set-env-vars="GCP_PROJECT=${{ env.PROJECT_ID }},BUCKET_NAME=${{ env.GCS_BUCKET }},DRIVE_SECRET_NAME=${{ env.DRIVE_SECRET_NAME }},FOLDER_ID_PENDING_ACCOUNT=${{ env.FOLDER_ID_PENDING_ACCOUNT }},FOLDER_ID_PROCESSED_ACCOUNT=${{ env.FOLDER_ID_PROCESSED_ACCOUNT }}"
-
-      - name: 📤 Deploy ETL-TARJETA-to-GCS
-        if: steps.changes.outputs.cards_function == 'true'
-        run: |
-          gcloud functions deploy etl-tarjeta-to-gcs \
-            --gen2 \
-            --runtime=python311 \
-            --region=${{ env.REGION }} \
-            --source=./cloud_functions/drive_to_gcs_card_payments \
-            --entry-point=main \
-            --trigger-topic=${{ env.DRIVE_CHECK_TOPIC }} \
-            --set-env-vars="GCP_PROJECT=${{ env.PROJECT_ID }},BUCKET_NAME=${{ env.GCS_BUCKET }},DRIVE_SECRET_NAME=${{ env.DRIVE_SECRET_NAME }},FOLDER_ID_PENDING_CARD=${{ env.FOLDER_ID_PENDING_CARD }},FOLDER_ID_PROCESSED_CARD=${{ env.FOLDER_ID_PROCESSED_CARD }}"
-
-      - name: 📤 Deploy GCS-to-BigQuery
-        if: steps.changes.outputs.bq_load_function == 'true'
-        run: |
-          gcloud functions deploy etl-gcs-to-bq \
-            --gen2 \
-            --runtime=python311 \
-            --region=${{ env.REGION }} \
-            --source=./cloud_functions/gcs_to_bq \
-            --entry-point=main \
-            --trigger-event-filters="type=google.cloud.storage.object.v1.finalized,bucket=${{ env.GCS_BUCKET }}" \
-            --trigger-location=eu \
-            --set-env-vars="GCP_PROJECT=${{ env.PROJECT_ID }},BIGQUERY_DATASET=${{ env.BIGQUERY_DATASET }},BIGQUERY_TABLE_RAW=${{ env.BIGQUERY_TABLE_RAW }}"
-
-  # ------------------------------------------------------
-  # JOB 2: Transformación en BigQuery (solo si cambia SQL o datos)
-  # ------------------------------------------------------
-  transform-data:
-    name: 📊 Run BigQuery Transformation
-    needs: deploy-functions
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      id-token: write
-
-    # Solo ejecuta si cambió el script SQL
-    if: ${{ needs.deploy-functions.outputs.sql_changed == 'true' }}
-
-    concurrency:
-      group: bq-transform-${{ github.ref }}
-      cancel-in-progress: true
-
-    steps:
-      - name: 🔐 Authenticate to Google Cloud
-        uses: google-github-actions/auth@v2
-        with:
-          workload_identity_provider: 'projects/${{ env.PROJECT_NUMBER }}/locations/global/workflowIdentityPools/github-pool/providers/github-provider'
-          service_account: 'github-actions-deployer@${{ env.PROJECT_ID }}.iam.gserviceaccount.com'
-
-      - name: ☁️ Set up gcloud
-        uses: google-github-actions/setup-gcloud@v2
-
-      - name: 📂 Checkout repository
-        uses: actions/checkout@v4
-
-      - name: ✅ Validate SQL script
-        run: |
-          bq query --dry_run --use_legacy_sql=false < queries/A0_raw_to_standard.sql
-          if [ $? -ne 0 ]; then
-            echo "❌ SQL validation failed!"
-            exit 1
-          fi
-
-      - name: 🚀 Execute BigQuery transformation
-        run: |
-          echo "⏳ Ejecutando transformación A0_raw_to_standard.sql..."
-          bq query --use_legacy_sql=false < queries/A0_raw_to_standard.sql
-        timeout-minutes: 10
-
-      - name: 📝 Summary
-        run: |
-          echo "✅ Transformación SQL completada con éxito."
-          echo "📄 Script: A0_raw_to_standard.sql"
-          echo "📊 Dataset: ${{ env.BIGQUERY_DATASET }}"
+    - name: Run BigQuery Transformation Script
+      run: |
+        echo "Ejecutando script de transformación en BigQuery..."
+        bq query --use_legacy_sql=false < queries/A0_raw_to_standard.sql

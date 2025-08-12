@@ -68,11 +68,15 @@ def process_single_file(drive_service, storage_client, file_metadata: dict):
 
     # 1. Descargar el archivo
     try:
-        request = drive_service.files().get_media(fileId=file_id)
+        # Usamos export_media para convertir el Google Sheet a formato Excel en memoria
+        request = drive_service.files().export_media(
+        fileId=file_id,
+        mimeType='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' # <-- Le pedimos un .xlsx
+        )
         file_bytes = io.BytesIO(request.execute())
     except HttpError as e:
-        logging.error(f"No se pudo descargar el archivo {file_name} (ID: {file_id}). Error: {e}")
-        return 
+        logging.error(f"No se pudo exportar/descargar el archivo {file_name} (ID: {file_id}). Error: {e}")
+    return 
 
     # 2. Lógica de procesamiento de Pandas específica para la TARJETA
     try:
@@ -130,7 +134,7 @@ def main(event: dict, context: object):
     try:
         query = (
             f"'{FOLDER_ID_PENDING_CARD}' in parents and "
-            f"mimeType='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' and "
+            f"mimeType='application/vnd.google-apps.spreadsheet' and "
             f"trashed=false"
         )
         response = drive_service.files().list(

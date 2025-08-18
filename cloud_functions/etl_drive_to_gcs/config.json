@@ -1,5 +1,5 @@
 {
-  "account": {
+  "bankinter_account": {
     "description": "Configuración para extractos de cuenta de Bankinter",
     "drive_folder_pending": "1P1O9XUaFA7pPmXufRN0xMIfU94zvYxPS",
     "drive_folder_processed": "18JQrL2GxmRFHVl8xVa0SYj_nhdpNLT18",
@@ -9,9 +9,11 @@
       "columns": ["fecha_contable", "fecha", "concepto", "importe", "saldo"],
       "final_columns": ["fecha", "concepto", "importe"]
     },
-    "source_type": "cuenta"
+    "source_type": "cuenta",
+    "entity": "Bankinter"
   },
-  "card": {
+
+  "bankinter_card": {
     "description": "Configuración para extractos de tarjeta de Bankinter",
     "drive_folder_pending": "1cXsLTPgcSwBB-TQPxXq-eio12MZAPIbm",
     "drive_folder_processed": "191Xlqc_YUTzOOvlw56pQxfEuBZOzrjnN",
@@ -22,6 +24,26 @@
       "final_columns": ["fecha", "concepto", "importe"],
       "drop_last_row": true
     },
-    "source_type": "tarjeta"
+    "source_type": "tarjeta",
+    "entity": "Bankinter"
+  },
+  
+  "revolut_account": {
+    "description": "Configuración para extractos de cuenta de Revolut (CSV)",
+    "drive_folder_pending": "ID_DE_TU_CARPETA_REVOLUT_PENDING",
+    "drive_folder_processed": "ID_DE_TU_CARPETA_REVOLUT_PROCESSED",
+    "gcs_path": "revolut/account",
+    "file_type": "csv",
+    "parser_config": {
+      "skiprows": 0,
+      "columns_map": {
+        "Completed Date": "fecha",
+        "Description": "concepto",
+        "Amount": "importe"
+      },
+      "date_format": "%Y-%m-%d %H:%M:%S"
+    },
+    "source_type": "cuenta",
+    "entity": "revolut"
   }
 }

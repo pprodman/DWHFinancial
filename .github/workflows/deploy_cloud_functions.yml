@@ -22,6 +22,8 @@ env:
   # --- Nombres de Tablas ---
   BQ_TABLE_TRANSACTIONS: 'transactions'
   BQ_TABLE_SUMMARY: 'monthly_summary'
+  # --- Nombre del Scheduler ---
+  SCHEDULER_JOB_NAME: 'financial-pipeline-trigger'
 
 jobs:
   deploy-and-run:

@@ -1,4 +1,4 @@
-CREATE OR REPLACE TABLE `@project_id.@gold_dataset.@gold_table` AS
+CREATE OR REPLACE TABLE `dwhfinancial.@gold_dataset.@gold_table` AS
 SELECT
   anio_mes,
   categoria,
@@ -7,7 +7,7 @@ SELECT
   SUM(importe) AS balance,
   COUNT(transaccion_id) AS numero_transacciones
 FROM
-  `@project_id.@silver_dataset.@silver_table`
+  `dwhfinancial.@silver_dataset.@silver_table`
 GROUP BY
   anio_mes,
   categoria

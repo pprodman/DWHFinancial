@@ -1,4 +1,4 @@
-MERGE `@project_id.@bronze_dataset.@bronze_table` AS T
+MERGE `dwhfinancial.@bronze_dataset.@bronze_table` AS T
 USING (
   SELECT
     transaccion_id,
@@ -23,7 +23,7 @@ USING (
       ELSE 'Otros'
     END AS categoria
   FROM
-    `@project_id.@raw_dataset.@raw_table`
+    `dwhfinancial.@raw_dataset.@raw_table`
 ) AS S
 ON T.transaccion_id = S.transaccion_id
 WHEN NOT MATCHED BY TARGET THEN

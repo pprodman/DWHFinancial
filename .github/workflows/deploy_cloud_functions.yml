@@ -89,29 +89,32 @@ jobs:
 
     - name: Run BigQuery Transformations
       run: |
+        # --- Paso 1: Transformar de Raw a Bronze ---
         echo "--- Ejecutando 01_raw_to_bronze.sql ---"
         bq query --project_id=${{ env.PROJECT_ID }} --use_legacy_sql=false \
-          --parameter=project_id:STRING:${{ env.PROJECT_ID }} \
-          --parameter=raw_dataset:STRING:${{ env.BQ_DATASET_RAW }} \
-          --parameter=bronze_dataset:STRING:${{ env.BQ_DATASET_BRONZE }} \
-          --parameter=raw_table:STRING:${{ env.BQ_TABLE_TRANSACTIONS }} \
-          --parameter=bronze_table:STRING:${{ env.BQ_TABLE_TRANSACTIONS }} \
-          "$(cat queries/01_raw_to_bronze.sql)"
+          --parameter="project_id:STRING:${{ env.PROJECT_ID }}" \
+          --parameter="raw_dataset:STRING:${{ env.BQ_DATASET_RAW }}" \
+          --parameter="bronze_dataset:STRING:${{ env.BQ_DATASET_BRONZE }}" \
+          --parameter="raw_table:STRING:${{ env.BQ_TABLE_TRANSACTIONS }}" \
+          --parameter="bronze_table:STRING:${{ env.BQ_TABLE_TRANSACTIONS }}" \
+          < queries/01_raw_to_bronze.sql
 
+        # --- Paso 2: Transformar de Bronze a Silver ---
         echo "--- Ejecutando 02_bronze_to_silver.sql ---"
         bq query --project_id=${{ env.PROJECT_ID }} --use_legacy_sql=false \
-          --parameter=project_id:STRING:${{ env.PROJECT_ID }} \
-          --parameter=bronze_dataset:STRING:${{ env.BQ_DATASET_BRONZE }} \
-          --parameter=silver_dataset:STRING:${{ env.BQ_DATASET_SILVER }} \
-          --parameter=bronze_table:STRING:${{ env.BQ_TABLE_TRANSACTIONS }} \
-          --parameter=silver_table:STRING:${{ env.BQ_TABLE_TRANSACTIONS }} \
-          "$(cat queries/02_bronze_to_silver.sql)"
+          --parameter="project_id:STRING:${{ env.PROJECT_ID }}" \
+          --parameter="bronze_dataset:STRING:${{ env.BQ_DATASET_BRONZE }}" \
+          --parameter="silver_dataset:STRING:${{ env.BQ_DATASET_SILVER }}" \
+          --parameter="bronze_table:STRING:${{ env.BQ_TABLE_TRANSACTIONS }}" \
+          --parameter="silver_table:STRING:${{ env.BQ_TABLE_TRANSACTIONS }}" \
+          < queries/02_bronze_to_silver.sql
 
+        # --- Paso 3: Transformar de Silver a Gold ---
         echo "--- Ejecutando 03_silver_to_gold.sql ---"
         bq query --project_id=${{ env.PROJECT_ID }} --use_legacy_sql=false \
-          --parameter=project_id:STRING:${{ env.PROJECT_ID }} \
-          --parameter=silver_dataset:STRING:${{ env.BQ_DATASET_SILVER }} \
-          --parameter=gold_dataset:STRING:${{ env.BQ_DATASET_GOLD }} \
-          --parameter=silver_table:STRING:${{ env.BQ_TABLE_TRANSACTIONS }} \
-          --parameter=gold_table:STRING:${{ env.BQ_TABLE_SUMMARY }} \
-          "$(cat queries/03_silver_to_gold.sql)"
+          --parameter="project_id:STRING:${{ env.PROJECT_ID }}" \
+          --parameter="silver_dataset:STRING:${{ env.BQ_DATASET_SILVER }}" \
+          --parameter="gold_dataset:STRING:${{ env.BQ_DATASET_GOLD }}" \
+          --parameter="silver_table:STRING:${{ env.BQ_TABLE_TRANSACTIONS }}" \
+          --parameter="gold_table:STRING:${{ env.BQ_TABLE_SUMMARY }}" \
+          < queries/03_silver_to_gold.sql

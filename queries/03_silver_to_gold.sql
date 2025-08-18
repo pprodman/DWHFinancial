@@ -1,4 +1,4 @@
-CREATE OR REPLACE TABLE `dwhfinancial.@gold_dataset.@gold_table` AS
+CREATE OR REPLACE TABLE `dwhfinancial.dwh_04_gold.monthly_summary` AS
 SELECT
   anio_mes,
   categoria,
@@ -7,7 +7,7 @@ SELECT
   SUM(importe) AS balance,
   COUNT(transaccion_id) AS numero_transacciones
 FROM
-  `dwhfinancial.@silver_dataset.@silver_table`
+  `dwhfinancial.dwh_03_silver.transactions`
 GROUP BY
   anio_mes,
   categoria

@@ -1,4 +1,4 @@
-MERGE `dwhfinancial.@silver_dataset.@silver_table` AS T
+MERGE `dwhfinancial.dwh_03_silver.transactions` AS T
 USING (
   SELECT
     transaccion_id,
@@ -13,7 +13,7 @@ USING (
     EXTRACT(MONTH FROM fecha) AS mes,
     FORMAT_DATE('%Y-%m', fecha) AS anio_mes
   FROM
-    `dwhfinancial.@bronze_dataset.@bronze_table`
+    `dwhfinancial.dwh_02_bronze.transactions`
   WHERE
     LOWER(concepto) NOT LIKE '%tarjeta diamond%'
 ) AS S

@@ -67,6 +67,24 @@ jobs:
         bq mk --table --schema=schemas/02_bronze_to_silver.json ${{ env.BQ_DATASET_BRONZE }}.${{ env.BQ_TABLE_TRANSACTIONS }} || echo "Tabla BRONZE ya existe."
         bq mk --table --schema=schemas/03_silver_to_gold.json ${{ env.BQ_DATASET_SILVER }}.${{ env.BQ_TABLE_TRANSACTIONS }} || echo "Tabla SILVER ya existe."
 
+    - name: Create or Update Cloud Scheduler Job
+      run: |
+        gcloud scheduler jobs create pubsub ${{ env.SCHEDULER_JOB_NAME }} \
+          --schedule="0 * * * *" \
+          --topic=${{ env.TRIGGER_TOPIC }} \
+          --message-body="Run" \
+          --location=${{ env.REGION }} \
+          --time-zone="Europe/Madrid" \
+          --description="Dispara el pipeline de datos financieros cada hora." \
+          || \
+        gcloud scheduler jobs update pubsub ${{ env.SCHEDULER_JOB_NAME }} \
+          --schedule="0 * * * *" \
+          --topic=${{ env.TRIGGER_TOPIC }} \
+          --message-body="Run" \
+          --location=${{ env.REGION }} \
+          --time-zone="Europe/Madrid" \
+          --description="Dispara el pipeline de datos financieros cada hora."    
+
     - name: Run BigQuery Transformations
       run: |
         echo "--- Ejecutando 01_raw_to_bronze.sql ---"

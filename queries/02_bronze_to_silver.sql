@@ -1,4 +1,3 @@
--- Paso 2: De Bronze a Silver
 MERGE `@project_id.@silver_dataset.@silver_table` AS T
 USING (
   SELECT

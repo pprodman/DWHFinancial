@@ -1,4 +1,3 @@
--- Paso 1: De Raw a Bronze
 MERGE `@project_id.@bronze_dataset.@bronze_table` AS T
 USING (
   SELECT

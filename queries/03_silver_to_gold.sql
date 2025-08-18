@@ -1,4 +1,3 @@
--- Paso 3: De Silver a Gold
 CREATE OR REPLACE TABLE `@project_id.@gold_dataset.@gold_table` AS
 SELECT
   anio_mes,

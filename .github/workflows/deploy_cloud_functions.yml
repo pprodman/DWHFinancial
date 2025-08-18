@@ -1,4 +1,4 @@
-# .github/workflows/deploy.yml
+# .github/workflows/deploy_cloud_functions.yml
 
 name: Deploy and Run Full Financial DWH
 
@@ -44,13 +44,15 @@ jobs:
     - name: Set up Cloud SDK
       uses: google-github-actions/setup-gcloud@v2
 
-    - name: Deploy Unified ETL (Drive to GCS)
+    - name: Deploy Pipeline ETL (Drive to GCS)
       run: |
-        gcloud functions deploy etl_drive_to_gcs --gen2 --runtime=python311 --region=${{ env.REGION }} --source=./cloud_functions/etl_drive_to_gcs --entry-point=main --trigger-topic=${{ env.TRIGGER_TOPIC }} --set-env-vars="GCP_PROJECT=${{ env.PROJECT_ID }},BUCKET_NAME=${{ env.GCS_BUCKET }},DRIVE_SECRET_NAME=${{ env.DRIVE_SECRET_NAME }}"
+        gcloud functions deploy etl-drive_to_gcs --gen2 --runtime=python311 --region=${{ env.REGION }} --source=./cloud_functions/etl_drive_to_gcs --entry-point=main --trigger-topic=${{ env.TRIGGER_TOPIC }} --set-env-vars="GCP_PROJECT=${{ env.PROJECT_ID }},BUCKET_NAME=${{ env.GCS_BUCKET }},DRIVE_SECRET_NAME=${{ env.DRIVE_SECRET_NAME }}"
 
     - name: Deploy GCS-to-BigQuery Function
       run: |
-        gcloud functions deploy etl_gcs_to_bq --gen2 --runtime=python311 --region=${{ env.REGION }} --source=./cloud_functions/etl_gcs_to_bq --entry-point=main --trigger-event-filters="type=google.cloud.storage.object.v1.finalized,bucket=${{ env.GCS_BUCKET }}" --trigger-location=eu --set-env-vars="GCP_PROJECT=${{ env.PROJECT_ID }},BIGQUERY_DATASET=${{ env.BQ_DATASET_RAW }},BIGQUERY_TABLE_RAW=${{ env.BQ_TABLE_TRANSACTIONS }}"
+        gcloud functions deploy etl_gcs_to_bq --gen2 --runtime=python311 --region=${{ env.REGION }} --source=./cloud_functions/etl_gcs_to_bq --entry-point=main --trigger-event-filters="type=google.cloud.storage.object.v1.finalized,bucket=${{ env.GCS_BUCKET }}" \
+        --trigger-location=us-east1 \
+        --set-env-vars="GCP_PROJECT=${{ env.PROJECT_ID }},BIGQUERY_DATASET=${{ env.BQ_DATASET_RAW }},BIGQUERY_TABLE_RAW=${{ env.BQ_TABLE_TRANSACTIONS }}"
 
     - name: Create BigQuery Datasets and Tables
       run: |
@@ -61,9 +63,9 @@ jobs:
         bq --location=${{ env.REGION }} mk --dataset --description "Capa GOLD: Datos agregados para analítica" ${{ env.BQ_DATASET_GOLD }} || echo "Dataset GOLD ya existe."
 
         echo "Creando tablas..."
-        bq mk --table --schema=schemas/A1_raw_to_bronze.json ${{ env.BQ_DATASET_RAW }}.${{ env.BQ_TABLE_TRANSACTIONS }} || echo "Tabla RAW ya existe."
-        bq mk --table --schema=schemas/A2_bronze_to_silver.json ${{ env.BQ_DATASET_BRONZE }}.${{ env.BQ_TABLE_TRANSACTIONS }} || echo "Tabla BRONZE ya existe."
-        bq mk --table --schema=schemas/A3_silver_to_gold.json ${{ env.BQ_DATASET_SILVER }}.${{ env.BQ_TABLE_TRANSACTIONS }} || echo "Tabla SILVER ya existe."
+        bq mk --table --schema=schemas/01_raw_to_bronze.json ${{ env.BQ_DATASET_RAW }}.${{ env.BQ_TABLE_TRANSACTIONS }} || echo "Tabla RAW ya existe."
+        bq mk --table --schema=schemas/02_bronze_to_silver.json ${{ env.BQ_DATASET_BRONZE }}.${{ env.BQ_TABLE_TRANSACTIONS }} || echo "Tabla BRONZE ya existe."
+        bq mk --table --schema=schemas/03_silver_to_gold.json ${{ env.BQ_DATASET_SILVER }}.${{ env.BQ_TABLE_TRANSACTIONS }} || echo "Tabla SILVER ya existe."
 
     - name: Run BigQuery Transformations
       run: |

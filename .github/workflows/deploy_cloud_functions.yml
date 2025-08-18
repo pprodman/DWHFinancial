@@ -49,6 +49,12 @@ jobs:
     - name: Set up Cloud SDK
       uses: google-github-actions/setup-gcloud@v2
 
+    # --- NUEVO PASO PARA CREAR LOS TOPICS ---
+    - name: Create Pub/Sub Topics
+      run: |
+        gcloud pubsub topics create ${{ env.INGESTION_TOPIC }} || echo "Topic ${{ env.INGESTION_TOPIC }} already exists."
+        gcloud pubsub topics create ${{ env.TRANSFORM_TOPIC }} || echo "Topic ${{ env.TRANSFORM_TOPIC }} already exists."
+
     - name: Deploy Ingestion ETL (Drive to GCS)
       run: |
         gcloud functions deploy etl-drive_to_gcs --gen2 --runtime=python311 --region=${{ env.REGION }} --source=./cloud_functions/etl_drive_to_gcs --entry-point=main --trigger-topic=${{ env.INGESTION_TOPIC }} --set-env-vars="GCP_PROJECT=${{ env.PROJECT_ID }},BUCKET_NAME=${{ env.GCS_BUCKET }},DRIVE_SECRET_NAME=${{ env.DRIVE_SECRET_NAME }}"
@@ -80,10 +86,10 @@ jobs:
 
     - name: Create or Update Cloud Schedulers
       run: |
-        # Scheduler para la Ingesta (Cada hora)
-        gcloud scheduler jobs create pubsub ${{ env.INGESTION_SCHEDULER_JOB }} --schedule="0 * * * *" --topic=${{ env.INGESTION_TOPIC }} --message-body="Run Ingestion" --location=${{ env.REGION }} --time-zone="Europe/Madrid" --description="Dispara la ingesta de datos desde Drive." || \
-        gcloud scheduler jobs update pubsub ${{ env.INGESTION_SCHEDULER_JOB }} --schedule="0 * * * *" --topic=${{ env.INGESTION_TOPIC }} --message-body="Run Ingestion" --location=${{ env.REGION }} --time-zone="Europe/Madrid" --description="Dispara la ingesta de datos desde Drive."
+        # Scheduler para la Ingesta (5 AM)
+        gcloud scheduler jobs create pubsub ${{ env.INGESTION_SCHEDULER_JOB }} --schedule="0 5 * * *" --topic=${{ env.INGESTION_TOPIC }} --message-body="Run Ingestion" --location=${{ env.REGION }} --time-zone="Europe/Madrid" --description="Dispara la ingesta de datos desde Drive." || \
+        gcloud scheduler jobs update pubsub ${{ env.INGESTION_SCHEDULER_JOB }} --schedule="0 5 * * *" --topic=${{ env.INGESTION_TOPIC }} --message-body="Run Ingestion" --location=${{ env.REGION }} --time-zone="Europe/Madrid" --description="Dispara la ingesta de datos desde Drive."
 
-        # Scheduler para la Transformación (Cada hora a los 10 minutos)
-        gcloud scheduler jobs create pubsub ${{ env.TRANSFORM_SCHEDULER_JOB }} --schedule="10 * * * *" --topic=${{ env.TRANSFORM_TOPIC }} --message-body="Run Transformation" --location=${{ env.REGION }} --time-zone="Europe/Madrid" --description="Dispara las transformaciones de BigQuery." || \
-        gcloud scheduler jobs update pubsub ${{ env.TRANSFORM_SCHEDULER_JOB }} --schedule="10 * * * *" --topic=${{ env.TRANSFORM_TOPIC }} --message-body="Run Transformation" --location=${{ env.REGION }} --time-zone="Europe/Madrid" --description="Dispara las transformaciones de BigQuery."
+        # Scheduler para la Transformación (6 AM)
+        gcloud scheduler jobs create pubsub ${{ env.TRANSFORM_SCHEDULER_JOB }} --schedule="0 6 * * *" --topic=${{ env.TRANSFORM_TOPIC }} --message-body="Run Transformation" --location=${{ env.REGION }} --time-zone="Europe/Madrid" --description="Dispara las transformaciones de BigQuery." || \
+        gcloud scheduler jobs update pubsub ${{ env.TRANSFORM_SCHEDULER_JOB }} --schedule="0 6 * * *" --topic=${{ env.TRANSFORM_TOPIC }} --message-body="Run Transformation" --location=${{ env.REGION }} --time-zone="Europe/Madrid" --description="Dispara las transformaciones de BigQuery."

@@ -49,7 +49,7 @@ jobs:
     - name: Set up Cloud SDK
       uses: google-github-actions/setup-gcloud@v2
 
-    # --- NUEVO PASO PARA CREAR LOS TOPICS ---
+    # --- PASO CLAVE: Crear los topics ANTES de desplegar las funciones ---
     - name: Create Pub/Sub Topics
       run: |
         gcloud pubsub topics create ${{ env.INGESTION_TOPIC }} || echo "Topic ${{ env.INGESTION_TOPIC }} already exists."
@@ -86,10 +86,10 @@ jobs:
 
     - name: Create or Update Cloud Schedulers
       run: |
-        # Scheduler para la Ingesta (5 AM)
-        gcloud scheduler jobs create pubsub ${{ env.INGESTION_SCHEDULER_JOB }} --schedule="0 5 * * *" --topic=${{ env.INGESTION_TOPIC }} --message-body="Run Ingestion" --location=${{ env.REGION }} --time-zone="Europe/Madrid" --description="Dispara la ingesta de datos desde Drive." || \
-        gcloud scheduler jobs update pubsub ${{ env.INGESTION_SCHEDULER_JOB }} --schedule="0 5 * * *" --topic=${{ env.INGESTION_TOPIC }} --message-body="Run Ingestion" --location=${{ env.REGION }} --time-zone="Europe/Madrid" --description="Dispara la ingesta de datos desde Drive."
+        # Scheduler para la Ingesta (Cada hora)
+        gcloud scheduler jobs create pubsub ${{ env.INGESTION_SCHEDULER_JOB }} --schedule="0 * * * *" --topic=${{ env.INGESTION_TOPIC }} --message-body="Run Ingestion" --location=${{ env.REGION }} --time-zone="Europe/Madrid" --description="Dispara la ingesta de datos desde Drive." || \
+        gcloud scheduler jobs update pubsub ${{ env.INGESTION_SCHEDULER_JOB }} --schedule="0 * * * *" --topic=${{ env.INGESTION_TOPIC }} --message-body="Run Ingestion" --location=${{ env.REGION }} --time-zone="Europe/Madrid" --description="Dispara la ingesta de datos desde Drive."
 
-        # Scheduler para la Transformación (6 AM)
-        gcloud scheduler jobs create pubsub ${{ env.TRANSFORM_SCHEDULER_JOB }} --schedule="0 6 * * *" --topic=${{ env.TRANSFORM_TOPIC }} --message-body="Run Transformation" --location=${{ env.REGION }} --time-zone="Europe/Madrid" --description="Dispara las transformaciones de BigQuery." || \
-        gcloud scheduler jobs update pubsub ${{ env.TRANSFORM_SCHEDULER_JOB }} --schedule="0 6 * * *" --topic=${{ env.TRANSFORM_TOPIC }} --message-body="Run Transformation" --location=${{ env.REGION }} --time-zone="Europe/Madrid" --description="Dispara las transformaciones de BigQuery."
+        # Scheduler para la Transformación (Cada hora a los 10 minutos)
+        gcloud scheduler jobs create pubsub ${{ env.TRANSFORM_SCHEDULER_JOB }} --schedule="10 * * * *" --topic=${{ env.TRANSFORM_TOPIC }} --message-body="Run Transformation" --location=${{ env.REGION }} --time-zone="Europe/Madrid" --description="Dispara las transformaciones de BigQuery." || \
+        gcloud scheduler jobs update pubsub ${{ env.TRANSFORM_SCHEDULER_JOB }} --schedule="10 * * * *" --topic=${{ env.TRANSFORM_TOPIC }} --message-body="Run Transformation" --location=${{ env.REGION }} --time-zone="Europe/Madrid" --description="Dispara las transformaciones de BigQuery."

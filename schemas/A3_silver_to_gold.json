@@ -1,0 +1,8 @@
+[
+    {"name": "anio_mes", "type": "STRING", "mode": "REQUIRED"},
+    {"name": "categoria", "type": "STRING", "mode": "REQUIRED"},
+    {"name": "total_ingresos", "type": "FLOAT", "mode": "NULLABLE"},
+    {"name": "total_gastos", "type": "FLOAT", "mode": "NULLABLE"},
+    {"name": "balance", "type": "FLOAT", "mode": "NULLABLE"},
+    {"name": "numero_transacciones", "type": "INTEGER", "mode": "NULLABLE"}
+]

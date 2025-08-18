@@ -1,0 +1,14 @@
+# cloud_functions/etl-drive-to-gcs-unified/requirements.txt
+
+# Framework para Cloud Functions
+functions-framework==3.*
+
+# Librerías de Google Cloud
+google-cloud-storage>=2.0.0
+google-cloud-secret-manager>=2.0.0
+google-api-python-client>=2.0.0
+google-auth-oauthlib>=1.0.0
+
+# Librerías para procesar datos
+pandas>=2.0.0
+openpyxl>=3.0.0 # Necesario para que Pandas pueda leer archivos .xlsx

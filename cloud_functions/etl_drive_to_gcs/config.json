@@ -1,0 +1,27 @@
+{
+  "account": {
+    "description": "Configuración para extractos de cuenta de Bankinter",
+    "drive_folder_pending": "1P1O9XUaFA7pPmXufRN0xMIfU94zvYxPS",
+    "drive_folder_processed": "18JQrL2GxmRFHVl8xVa0SYj_nhdpNLT18",
+    "gcs_path": "bankinter/account",
+    "parser_config": {
+      "skiprows": 4,
+      "columns": ["fecha_contable", "fecha", "concepto", "importe", "saldo"],
+      "final_columns": ["fecha", "concepto", "importe"]
+    },
+    "source_type": "cuenta"
+  },
+  "card": {
+    "description": "Configuración para extractos de tarjeta de Bankinter",
+    "drive_folder_pending": "1cXsLTPgcSwBB-TQPxXq-eio12MZAPIbm",
+    "drive_folder_processed": "191Xlqc_YUTzOOvlw56pQxfEuBZOzrjnN",
+    "gcs_path": "bankinter/card",
+    "parser_config": {
+      "skiprows": 6,
+      "columns": ["fecha", "concepto", "importe"],
+      "final_columns": ["fecha", "concepto", "importe"],
+      "drop_last_row": true
+    },
+    "source_type": "tarjeta"
+  }
+}

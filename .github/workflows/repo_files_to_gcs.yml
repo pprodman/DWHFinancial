@@ -1,50 +1,45 @@
-# Este workflow sincroniza el contenido del repositorio con un bucket de GCS
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
 
-name: Mirror Source Code to GCS
+name: Upload repository files to GCS
 
-# Activador: Se ejecuta en cada push a la rama 'main'
 on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
-# --- VARIABLES DE ENTORNO GLOBALES ---
 env:
   PROJECT_ID: 'dwhfinancial'
   PROJECT_NUMBER: '675312276583'
-  GCS_BUCKET: 'dwhfinancial-repo'
+  # ¡NUEVO! Define el nombre de tu bucket para la copia de seguridad.
+  GCS_BUCKET_REPO_BACKUP: 'dwhfinancial-repo-backup' 
 
 jobs:
-  mirror:
-    name: Mirror to Google Cloud Storage
+  backup:
+    name: Mirror Repository to GCS
     runs-on: ubuntu-latest
-
-    # Permisos necesarios
     permissions:
       contents: 'read'
       id-token: 'write'
 
     steps:
-    # --- Paso 1: Checkout del código ---
+    # 1. Checkout del código del repositorio
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    # --- Paso 2: Autenticación con Google Cloud ---
+    # 2. Autenticación con Google Cloud
     - name: Authenticate to Google Cloud
       uses: 'google-github-actions/auth@v2'
       with:
-        # Reemplaza con el nombre completo de tu Workload Identity Pool Provider
         workload_identity_provider: 'projects/${{ env.PROJECT_NUMBER }}/locations/global/workloadIdentityPools/github-pool/providers/github-provider'
         service_account: 'github-actions-deployer@${{ env.PROJECT_ID }}.iam.gserviceaccount.com'
 
-    # --- Paso 3: Configurar gcloud/gsutil ---
-    # Necesitamos este paso para poder usar el comando gsutil
+    # 3. Configurar el SDK de Google Cloud
     - name: Set up Cloud SDK
       uses: google-github-actions/setup-gcloud@v2
 
-    # --- Paso 4 (NUEVO): Sincronizar el repositorio con el bucket ---
-    # Usamos gsutil rsync para crear un espejo del directorio actual en el bucket
+    # 4. Sincronizar los archivos con el bucket de GCS
     - name: Sync repository to GCS bucket
       run: |
-        echo "Sincronizando el repositorio con el bucket de GCS..."
-        gsutil -m rsync -d -r . gs://${{ env.GCS_BUCKET }}
+        echo "Sincronizando el repositorio con gs://${{ env.GCS_BUCKET_REPO_BACKUP }}..."
+        gsutil -m rsync -d -r . gs://${{ env.GCS_BUCKET_REPO_BACKUP }}

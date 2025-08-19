@@ -1,0 +1,5 @@
+# Framework para Cloud Functions
+functions-framework==3.*
+
+# Librería de Google Cloud para BigQuery
+google-cloud-bigquery>=3.0.0

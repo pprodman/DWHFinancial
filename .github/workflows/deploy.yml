@@ -55,7 +55,7 @@ jobs:
 
     - name: Deploy Ingestion ETL (Drive to GCS)
       run: |
-        gcloud functions deploy etl-drive_to_gcs --gen2 --runtime=python311 --region=${{ env.REGION }} --source=./cloud_functions/etl_drive_to_gcs --entry-point=main --trigger-topic=${{ env.INGESTION_TOPIC }} --set-env-vars="GCP_PROJECT=${{ env.PROJECT_ID }},BUCKET_NAME=${{ env.GCS_BUCKET }},DRIVE_SECRET_NAME=${{ env.DRIVE_SECRET_NAME }}"
+        gcloud functions deploy etl_drive_to_gcs --gen2 --runtime=python311 --region=${{ env.REGION }} --source=./cloud_functions/etl_drive_to_gcs --entry-point=main --trigger-topic=${{ env.INGESTION_TOPIC }} --set-env-vars="GCP_PROJECT=${{ env.PROJECT_ID }},BUCKET_NAME=${{ env.GCS_BUCKET }},DRIVE_SECRET_NAME=${{ env.DRIVE_SECRET_NAME }}"
 
     - name: Deploy External Table Creator Function
       run: |

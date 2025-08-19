@@ -10,80 +10,133 @@ on:
 env:
   PROJECT_ID: 'dwhfinancial'
   PROJECT_NUMBER: '675312276583'
-  REGION: 'europe-west1'
+  REGION_EU: 'europe-west1'
+  REGION_US: 'us-east1'
   GCS_BUCKET: 'dwhfinancial-data-feed'
   DRIVE_SECRET_NAME: 'drive-service-account-key'
   INGESTION_TOPIC: 'drive-check-topic'
   TRANSFORM_TOPIC: 'run-bq-transformations-topic'
-  # --- Datasets por Capa ---
+
+  # Datasets BigQuery
   BQ_DATASET_RAW: 'dwh_01_raw'
   BQ_DATASET_BRONZE: 'dwh_02_bronze'
   BQ_DATASET_SILVER: 'dwh_03_silver'
   BQ_DATASET_GOLD: 'dwh_04_gold'
-  # --- Nombres de Tablas ---
+
+  # Tablas
   BQ_TABLE_TRANSACTIONS: 'transactions'
   BQ_TABLE_SUMMARY: 'monthly_summary'
-  # --- Nombres de Schedulers ---
+
+  # Schedulers
   INGESTION_SCHEDULER_JOB: 'financial-ingestion-trigger'
   TRANSFORM_SCHEDULER_JOB: 'financial-transform-trigger'
 
 jobs:
   deploy-and-run:
-    name: Deploy Infrastructure
+    name: Deploy Infrastructure and Functions
     runs-on: ubuntu-latest
     permissions:
       contents: 'read'
       id-token: 'write'
 
     steps:
-    - name: Checkout repository
+    - name: Checkout code
       uses: actions/checkout@v4
 
     - name: Authenticate to Google Cloud
-      uses: 'google-github-actions/auth@v2'
+      uses: google-github-actions/auth@v2
       with:
         workload_identity_provider: 'projects/${{ env.PROJECT_NUMBER }}/locations/global/workloadIdentityPools/github-pool/providers/github-provider'
         service_account: 'github-actions-deployer@${{ env.PROJECT_ID }}.iam.gserviceaccount.com'
 
-    - name: Set up Cloud SDK
+    - name: Set up gcloud CLI
       uses: google-github-actions/setup-gcloud@v2
 
+    # 1) Crear Pub/Sub Topics (idempotente)
     - name: Create Pub/Sub Topics
       run: |
-        gcloud pubsub topics create ${{ env.INGESTION_TOPIC }} || echo "Topic ${{ env.INGESTION_TOPIC }} already exists."
-        gcloud pubsub topics create ${{ env.TRANSFORM_TOPIC }} || echo "Topic ${{ env.TRANSFORM_TOPIC }} already exists."
+        gcloud pubsub topics create ${{ env.INGESTION_TOPIC }} --project=${{ env.PROJECT_ID }} || echo "Topic already exists"
+        gcloud pubsub topics create ${{ env.TRANSFORM_TOPIC }} --project=${{ env.PROJECT_ID }} || echo "Topic already exists"
 
+    # 2) Crear BigQuery datasets (antes de desplegar funciones que los usen)
+    - name: Create BigQuery Datasets
+      run: |
+        bq --location=${{ env.REGION_EU }} mk --dataset ${{ env.PROJECT_ID }}:${{ env.BQ_DATASET_RAW }}     || echo "RAW dataset exists"
+        bq --location=${{ env.REGION_EU }} mk --dataset ${{ env.PROJECT_ID }}:${{ env.BQ_DATASET_BRONZE }} || echo "BRONZE dataset exists"
+        bq --location=${{ env.REGION_EU }} mk --dataset ${{ env.PROJECT_ID }}:${{ env.BQ_DATASET_SILVER }} || echo "SILVER dataset exists"
+        bq --location=${{ env.REGION_EU }} mk --dataset ${{ env.PROJECT_ID }}:${{ env.BQ_DATASET_GOLD }}   || echo "GOLD dataset exists"
+
+    # 3) Deploy Cloud Functions
     - name: Deploy Ingestion ETL (Drive to GCS)
       run: |
-        gcloud functions deploy etl-drive_to_gcs --gen2 --runtime=python311 --region=${{ env.REGION }} --source=./cloud_functions/etl_drive_to_gcs --entry-point=main --trigger-topic=${{ env.INGESTION_TOPIC }} --set-env-vars="GCP_PROJECT=${{ env.PROJECT_ID }},BUCKET_NAME=${{ env.GCS_BUCKET }},DRIVE_SECRET_NAME=${{ env.DRIVE_SECRET_NAME }}"
+        gcloud functions deploy etl_drive_to_gcs \
+          --gen2 \
+          --region=${{ env.REGION_US }} \
+          --runtime=python311 \
+          --project=${{ env.PROJECT_ID }} \
+          --source=./cloud_functions/etl_drive_to_gcs \
+          --entry-point=main \
+          --trigger-topic=${{ env.INGESTION_TOPIC }} \
+          --set-env-vars="GCP_PROJECT=${{ env.PROJECT_ID }},BUCKET_NAME=${{ env.GCS_BUCKET }},DRIVE_SECRET_NAME=${{ env.DRIVE_SECRET_NAME }}"
 
-    - name: Deploy External Table Creator Function
+    - name: Deploy External Table Creator Function (GCS Trigger)
       run: |
-        gcloud functions deploy create-external-table --gen2 --runtime=python311 --region=${{ env.REGION }} --source=./cloud_functions/create-external-table --entry-point=main --trigger-event-filters="type=google.cloud.storage.object.v1.finalized,bucket=${{ env.GCS_BUCKET }}" \
-        --trigger-location=us-east1 \
-        --set-env-vars="GCP_PROJECT=${{ env.PROJECT_ID }},BQ_DATASET_RAW=${{ env.BQ_DATASET_RAW }}"
+        gcloud functions deploy create_external_table \
+          --gen2 \
+          --region=${{ env.REGION_US }} \
+          --runtime=python311 \
+          --project=${{ env.PROJECT_ID }} \
+          --source=./cloud_functions/create_external_table \
+          --entry-point=main \
+          --trigger-event=google.cloud.storage.object.v1.finalized \
+          --trigger-resource=${{ env.GCS_BUCKET }} \
+          --set-env-vars="GCP_PROJECT=${{ env.PROJECT_ID }},BQ_DATASET_RAW=${{ env.BQ_DATASET_RAW }}"
 
-    - name: Deploy Transformation Function (Run BQ Queries)
+    - name: Deploy Transformation Function (Run BQ SQL)
       run: |
-        gcloud functions deploy run-bq-transformations --gen2 --runtime=python311 --region=${{ env.REGION }} --source=./cloud_functions/run-bq-transformations --entry-point=main --trigger-topic=${{ env.TRANSFORM_TOPIC }} \
-        --set-env-vars="GCP_PROJECT=${{ env.PROJECT_ID }},BQ_DATASET_RAW=${{ env.BQ_DATASET_RAW }},BQ_DATASET_BRONZE=${{ env.BQ_DATASET_BRONZE }},BQ_DATASET_SILVER=${{ env.BQ_DATASET_SILVER }},BQ_DATASET_GOLD=${{ env.BQ_DATASET_GOLD }},BQ_TABLE_TRANSACTIONS=${{ env.BQ_TABLE_TRANSACTIONS }},BQ_TABLE_SUMMARY=${{ env.BQ_TABLE_SUMMARY }}"
+        gcloud functions deploy run_bq_transformations \
+          --gen2 \
+          --region=${{ env.REGION_EU }} \
+          --runtime=python311 \
+          --project=${{ env.PROJECT_ID }} \
+          --source=./cloud_functions/run_bq_transformations \
+          --entry-point=main \
+          --trigger-topic=${{ env.TRANSFORM_TOPIC }} \
+          --set-env-vars="GCP_PROJECT=${{ env.PROJECT_ID }},BQ_DATASET_RAW=${{ env.BQ_DATASET_RAW }},BQ_DATASET_BRONZE=${{ env.BQ_DATASET_BRONZE }},BQ_DATASET_SILVER=${{ env.BQ_DATASET_SILVER }},BQ_DATASET_GOLD=${{ env.BQ_DATASET_GOLD }},BQ_TABLE_TRANSACTIONS=${{ env.BQ_TABLE_TRANSACTIONS }},BQ_TABLE_SUMMARY=${{ env.BQ_TABLE_SUMMARY }}"
 
-    - name: Create BigQuery Datasets and NATIVE Tables
+    # 4) Crear / actualizar schedulers
+    - name: Create or Update Cloud Scheduler jobs
       run: |
-        echo "Creando datasets..."
-        bq --location=${{ env.REGION }} mk --dataset --description "Capa RAW: Datos externos" ${{ env.BQ_DATASET_RAW }} || echo "Dataset RAW ya existe."
-        bq --location=${{ env.REGION }} mk --dataset --description "Capa BRONZE: Datos nativos enriquecidos" ${{ env.BQ_DATASET_BRONZE }} || echo "Dataset BRONZE ya existe."
-        bq --location=${{ env.REGION }} mk --dataset --description "Capa SILVER: Datos nativos de negocio" ${{ env.BQ_DATASET_SILVER }} || echo "Dataset SILVER ya existe."
-        bq --location=${{ env.REGION }} mk --dataset --description "Capa GOLD: Datos agregados" ${{ env.BQ_DATASET_GOLD }} || echo "Dataset GOLD ya existe."
+        gcloud scheduler jobs create pubsub ${{ env.INGESTION_SCHEDULER_JOB }} \
+          --schedule="0 * * * *" \
+          --topic=${{ env.INGESTION_TOPIC }} \
+          --message-body="Run Ingestion" \
+          --location=${{ env.REGION_EU }} \
+          --project=${{ env.PROJECT_ID }} \
+          --time-zone="Europe/Madrid" \
+          --description="Dispara la ingesta de datos desde Drive." \
+          || \
+        gcloud scheduler jobs update pubsub ${{ env.INGESTION_SCHEDULER_JOB }} \
+          --schedule="0 * * * *" \
+          --topic=${{ env.INGESTION_TOPIC }} \
+          --message-body="Run Ingestion" \
+          --location=${{ env.REGION_EU }} \
+          --project=${{ env.PROJECT_ID }} \
+          --time-zone="Europe/Madrid"
 
-        echo "Creando tablas NATIVAS..."
-        bq mk --table --schema=schemas/A2_bronze_transactions.json ${{ env.BQ_DATASET_BRONZE }}.${{ env.BQ_TABLE_TRANSACTIONS }} || echo "Tabla BRONZE ya existe."
-        bq mk --table --schema=schemas/A3_silver_transactions.json ${{ env.BQ_DATASET_SILVER }}.${{ env.BQ_TABLE_TRANSACTIONS }} || echo "Tabla SILVER ya existe."
-
-    - name: Create or Update Cloud Schedulers
-      run: |
-        gcloud scheduler jobs create pubsub ${{ env.INGESTION_SCHEDULER_JOB }} --schedule="0 5 * * *" --topic=${{ env.INGESTION_TOPIC }} --message-body="Run Ingestion" --location=${{ env.REGION }} --time-zone="Europe/Madrid" --description="Dispara la ingesta de datos desde Drive." || \
-        gcloud scheduler jobs update pubsub ${{ env.INGESTION_SCHEDULER_JOB }} --schedule="0 5 * * *" --topic=${{ env.INGESTION_TOPIC }} --message-body="Run Ingestion" --location=${{ env.REGION }} --time-zone="Europe/Madrid"
-        
-        gcloud scheduler jobs create pubsub ${{ env.TRANSFORM_SCHEDULER_JOB }} --schedule="0 6 * * *" --topic=${{ env.TRANSFORM_TOPIC }} --message-body="Run Transformation" --location=${{ env.REGION }} --time-zone="Europe/Madrid" --description="Dispara las transformaciones de BigQuery." || \
-        gcloud scheduler jobs update pubsub ${{ env.TRANSFORM_SCHEDULER_JOB }} --schedule="0 6 * * *" --topic=${{ env.TRANSFORM_TOPIC }} --message-body="Run Transformation" --location=${{ env.REGION }} --time-zone="Europe/Madrid"
+        gcloud scheduler jobs create pubsub ${{ env.TRANSFORM_SCHEDULER_JOB }} \
+          --schedule="0 * * * *" \
+          --topic=${{ env.TRANSFORM_TOPIC }} \
+          --message-body="Run Transformation" \
+          --location=${{ env.REGION_EU }} \
+          --project=${{ env.PROJECT_ID }} \
+          --time-zone="Europe/Madrid" \
+          --description="Dispara las transformaciones de BigQuery." \
+          || \
+        gcloud scheduler jobs update pubsub ${{ env.TRANSFORM_SCHEDULER_JOB }} \
+          --schedule="0 * * * *" \
+          --topic=${{ env.TRANSFORM_TOPIC }} \
+          --message-body="Run Transformation" \
+          --location=${{ env.REGION_EU }} \
+          --project=${{ env.PROJECT_ID }} \
+          --time-zone="Europe/Madrid"

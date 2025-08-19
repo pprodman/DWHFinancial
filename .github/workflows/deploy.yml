@@ -108,7 +108,7 @@ jobs:
     - name: Create or Update Cloud Scheduler jobs
       run: |
         gcloud scheduler jobs create pubsub ${{ env.INGESTION_SCHEDULER_JOB }} \
-          --schedule="0 5 * * *" \
+          --schedule="0 * * * *" \
           --topic=${{ env.INGESTION_TOPIC }} \
           --message-body="Run Ingestion" \
           --location=${{ env.REGION_EU }} \
@@ -117,7 +117,7 @@ jobs:
           --description="Dispara la ingesta de datos desde Drive." \
           || \
         gcloud scheduler jobs update pubsub ${{ env.INGESTION_SCHEDULER_JOB }} \
-          --schedule="0 5 * * *" \
+          --schedule="0 * * * *" \
           --topic=${{ env.INGESTION_TOPIC }} \
           --message-body="Run Ingestion" \
           --location=${{ env.REGION_EU }} \
@@ -125,7 +125,7 @@ jobs:
           --time-zone="Europe/Madrid"
 
         gcloud scheduler jobs create pubsub ${{ env.TRANSFORM_SCHEDULER_JOB }} \
-          --schedule="0 6 * * *" \
+          --schedule="0 * * * *" \
           --topic=${{ env.TRANSFORM_TOPIC }} \
           --message-body="Run Transformation" \
           --location=${{ env.REGION_EU }} \
@@ -134,7 +134,7 @@ jobs:
           --description="Dispara las transformaciones de BigQuery." \
           || \
         gcloud scheduler jobs update pubsub ${{ env.TRANSFORM_SCHEDULER_JOB }} \
-          --schedule="0 6 * * *" \
+          --schedule="0 * * * *" \
           --topic=${{ env.TRANSFORM_TOPIC }} \
           --message-body="Run Transformation" \
           --location=${{ env.REGION_EU }} \

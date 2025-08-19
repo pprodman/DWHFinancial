@@ -1,6 +1,8 @@
+# main.py
 import os
 import logging
 from google.cloud import bigquery
+from pathlib import Path
 
 logging.basicConfig(level=logging.INFO)
 
@@ -13,21 +15,35 @@ BQ_DATASET_GOLD = os.environ.get("BQ_DATASET_GOLD")
 BQ_TABLE_TRANSACTIONS = os.environ.get("BQ_TABLE_TRANSACTIONS")
 BQ_TABLE_SUMMARY = os.environ.get("BQ_TABLE_SUMMARY")
 
+# Validar que todas las variables estén presentes
+REQUIRED_ENV_VARS = [
+    PROJECT_ID, BQ_DATASET_RAW, BQ_DATASET_BRONZE, 
+    BQ_DATASET_SILVER, BQ_DATASET_GOLD, 
+    BQ_TABLE_TRANSACTIONS, BQ_TABLE_SUMMARY
+]
+
+if not all(REQUIRED_ENV_VARS):
+    raise ValueError("Missing required environment variables")
+
 client = bigquery.Client()
 
-def execute_transformation(query_file_path, job_config):
+def execute_transformation(query_file_path, job_config=None):
     """Reads a SQL file and executes it as a parameterized query."""
     logging.info(f"Executing transformation from: {query_file_path}")
+    
+    # Verificar que el archivo existe
+    if not Path(query_file_path).exists():
+        logging.error(f"Query file not found: {query_file_path}")
+        raise FileNotFoundError(f"Query file not found: {query_file_path}")
+    
     try:
         with open(query_file_path, 'r') as f:
             sql = f.read()
         
         query_job = client.query(sql, job_config=job_config)
-        query_job.result() # Wait for the job to complete
+        query_job.result()  # Wait for the job to complete
         logging.info(f"Successfully executed: {query_file_path}")
-    except FileNotFoundError:
-        logging.error(f"Query file not found: {query_file_path}")
-        raise
+        return query_job
     except Exception as e:
         logging.error(f"Failed to execute query from {query_file_path}: {e}")
         raise
@@ -46,7 +62,6 @@ def main(event, context):
                 bigquery.ScalarQueryParameter("bronze_table", "STRING", BQ_TABLE_TRANSACTIONS),
             ]
         )
-        # Asegúrate de que este fichero exista en la carpeta de la función
         execute_transformation('queries/00_raw_external_to_bronze.sql', job_config_r2b)
 
         # --- Step 2: Bronze to Silver ---

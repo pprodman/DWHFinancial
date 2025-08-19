@@ -10,7 +10,8 @@ on:
 env:
   PROJECT_ID: 'dwhfinancial'
   PROJECT_NUMBER: '675312276583'
-  REGION: 'europe-west1'
+  REGION_EU: 'europe-west1'
+  REGION_US: 'us-east1'
   GCS_BUCKET: 'dwhfinancial-data-feed'
   DRIVE_SECRET_NAME: 'drive-service-account-key'
   INGESTION_TOPIC: 'drive-check-topic'
@@ -60,17 +61,17 @@ jobs:
     # 2) Crear BigQuery datasets (antes de desplegar funciones que los usen)
     - name: Create BigQuery Datasets
       run: |
-        bq --location=${{ env.REGION }} mk --dataset ${{ env.PROJECT_ID }}:${{ env.BQ_DATASET_RAW }}     || echo "RAW dataset exists"
-        bq --location=${{ env.REGION }} mk --dataset ${{ env.PROJECT_ID }}:${{ env.BQ_DATASET_BRONZE }} || echo "BRONZE dataset exists"
-        bq --location=${{ env.REGION }} mk --dataset ${{ env.PROJECT_ID }}:${{ env.BQ_DATASET_SILVER }} || echo "SILVER dataset exists"
-        bq --location=${{ env.REGION }} mk --dataset ${{ env.PROJECT_ID }}:${{ env.BQ_DATASET_GOLD }}   || echo "GOLD dataset exists"
+        bq --location=${{ env.REGION_EU }} mk --dataset ${{ env.PROJECT_ID }}:${{ env.BQ_DATASET_RAW }}     || echo "RAW dataset exists"
+        bq --location=${{ env.REGION_EU }} mk --dataset ${{ env.PROJECT_ID }}:${{ env.BQ_DATASET_BRONZE }} || echo "BRONZE dataset exists"
+        bq --location=${{ env.REGION_EU }} mk --dataset ${{ env.PROJECT_ID }}:${{ env.BQ_DATASET_SILVER }} || echo "SILVER dataset exists"
+        bq --location=${{ env.REGION_EU }} mk --dataset ${{ env.PROJECT_ID }}:${{ env.BQ_DATASET_GOLD }}   || echo "GOLD dataset exists"
 
     # 3) Deploy Cloud Functions
     - name: Deploy Ingestion ETL (Drive to GCS)
       run: |
         gcloud functions deploy etl_drive_to_gcs \
           --gen2 \
-          --region=${{ env.REGION }} \
+          --region=${{ env.REGION_US }} \
           --runtime=python311 \
           --project=${{ env.PROJECT_ID }} \
           --source=./cloud_functions/etl_drive_to_gcs \
@@ -82,7 +83,7 @@ jobs:
       run: |
         gcloud functions deploy create_external_table \
           --gen2 \
-          --region=${{ env.REGION }} \
+          --region=${{ env.REGION_US }} \
           --runtime=python311 \
           --project=${{ env.PROJECT_ID }} \
           --source=./cloud_functions/create_external_table \
@@ -95,7 +96,7 @@ jobs:
       run: |
         gcloud functions deploy run_bq_transformations \
           --gen2 \
-          --region=${{ env.REGION }} \
+          --region=${{ env.REGION_EU }} \
           --runtime=python311 \
           --project=${{ env.PROJECT_ID }} \
           --source=./cloud_functions/run_bq_transformations \
@@ -110,7 +111,7 @@ jobs:
           --schedule="0 5 * * *" \
           --topic=${{ env.INGESTION_TOPIC }} \
           --message-body="Run Ingestion" \
-          --location=${{ env.REGION }} \
+          --location=${{ env.REGION_EU }} \
           --project=${{ env.PROJECT_ID }} \
           --time-zone="Europe/Madrid" \
           --description="Dispara la ingesta de datos desde Drive." \
@@ -119,7 +120,7 @@ jobs:
           --schedule="0 5 * * *" \
           --topic=${{ env.INGESTION_TOPIC }} \
           --message-body="Run Ingestion" \
-          --location=${{ env.REGION }} \
+          --location=${{ env.REGION_EU }} \
           --project=${{ env.PROJECT_ID }} \
           --time-zone="Europe/Madrid"
 
@@ -127,7 +128,7 @@ jobs:
           --schedule="0 6 * * *" \
           --topic=${{ env.TRANSFORM_TOPIC }} \
           --message-body="Run Transformation" \
-          --location=${{ env.REGION }} \
+          --location=${{ env.REGION_EU }} \
           --project=${{ env.PROJECT_ID }} \
           --time-zone="Europe/Madrid" \
           --description="Dispara las transformaciones de BigQuery." \
@@ -136,6 +137,6 @@ jobs:
           --schedule="0 6 * * *" \
           --topic=${{ env.TRANSFORM_TOPIC }} \
           --message-body="Run Transformation" \
-          --location=${{ env.REGION }} \
+          --location=${{ env.REGION_EU }} \
           --project=${{ env.PROJECT_ID }} \
           --time-zone="Europe/Madrid"

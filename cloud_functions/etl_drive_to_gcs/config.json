@@ -10,7 +10,7 @@
       "final_columns": ["fecha", "concepto", "importe"]
     },
     "source_type": "cuenta",
-    "entity": "Bankinter"
+    "entity": "bankinter"
   },
 
   "bankinter_card": {
@@ -25,7 +25,7 @@
       "drop_last_row": true
     },
     "source_type": "tarjeta",
-    "entity": "Bankinter"
+    "entity": "bankinter"
   },
   
   "revolut_account": {

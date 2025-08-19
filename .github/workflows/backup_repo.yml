@@ -1,6 +1,6 @@
-# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+# .github/workflows/backup_repo.yml
 
-name: Upload repository files to GCS
+name: Backup Repository to GCS
 
 on:
   push:
@@ -11,7 +11,7 @@ on:
 env:
   PROJECT_ID: 'dwhfinancial'
   PROJECT_NUMBER: '675312276583'
-  # ¡NUEVO! Define el nombre de tu bucket para la copia de seguridad.
+  # Define el nombre de tu bucket para la copia de seguridad.
   GCS_BUCKET_REPO_BACKUP: 'dwhfinancial-repo-backup' 
 
 jobs:

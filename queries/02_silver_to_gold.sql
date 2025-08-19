@@ -1,16 +1,18 @@
-CREATE OR REPLACE TABLE `dwhfinancial.dwh_04_gold.monthly_summary` AS
+CREATE OR REPLACE TABLE `@project_id.@gold_dataset.@gold_table` AS
 SELECT
   anio_mes,
   categoria,
+  entidad,
   SUM(IF(tipo_movimiento = 'Ingreso', importe, 0)) AS total_ingresos,
   SUM(IF(tipo_movimiento = 'Gasto', importe, 0)) AS total_gastos,
   SUM(importe) AS balance,
   COUNT(transaccion_id) AS numero_transacciones
 FROM
-  `dwhfinancial.dwh_03_silver.transactions`
+  `@project_id.@silver_dataset.@silver_table`
 GROUP BY
   anio_mes,
-  categoria
+  categoria,
+  entidad
 ORDER BY
   anio_mes DESC,
   balance DESC;

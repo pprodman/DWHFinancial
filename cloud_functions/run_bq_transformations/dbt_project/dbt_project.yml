@@ -5,7 +5,6 @@ config-version: 2
 profile: 'dwhfinancial_profile'
 
 model-paths: ["models"]
-source-paths: ["sources"]
 seed-paths: ["seeds"]
 test-paths: ["tests"]
 analysis-paths: ["analyses"]

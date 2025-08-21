@@ -1,96 +1,72 @@
-# main.py
 import os
 import logging
-from google.cloud import bigquery
-from pathlib import Path
+import subprocess
 
 logging.basicConfig(level=logging.INFO)
 
-# --- Environment Variables ---
+# --- Variables de Entorno ---
 PROJECT_ID = os.environ.get("GCP_PROJECT")
-BQ_DATASET_RAW = os.environ.get("BQ_DATASET_RAW")
-BQ_DATASET_BRONZE = os.environ.get("BQ_DATASET_BRONZE")
-BQ_DATASET_SILVER = os.environ.get("BQ_DATASET_SILVER")
-BQ_DATASET_GOLD = os.environ.get("BQ_DATASET_GOLD")
-BQ_TABLE_TRANSACTIONS = os.environ.get("BQ_TABLE_TRANSACTIONS")
-BQ_TABLE_SUMMARY = os.environ.get("BQ_TABLE_SUMMARY")
-
-# Validar que todas las variables estén presentes
-REQUIRED_ENV_VARS = [
-    PROJECT_ID, BQ_DATASET_RAW, BQ_DATASET_BRONZE, 
-    BQ_DATASET_SILVER, BQ_DATASET_GOLD, 
-    BQ_TABLE_TRANSACTIONS, BQ_TABLE_SUMMARY
-]
-
-if not all(REQUIRED_ENV_VARS):
-    raise ValueError("Missing required environment variables")
-
-client = bigquery.Client()
-
-def execute_transformation(query_file_path, job_config=None):
-    """Reads a SQL file and executes it as a parameterized query."""
-    logging.info(f"Executing transformation from: {query_file_path}")
-    
-    # Verificar que el archivo existe
-    if not Path(query_file_path).exists():
-        logging.error(f"Query file not found: {query_file_path}")
-        raise FileNotFoundError(f"Query file not found: {query_file_path}")
-    
-    try:
-        with open(query_file_path, 'r') as f:
-            sql = f.read()
-        
-        query_job = client.query(sql, job_config=job_config)
-        query_job.result()  # Wait for the job to complete
-        logging.info(f"Successfully executed: {query_file_path}")
-        return query_job
-    except Exception as e:
-        logging.error(f"Failed to execute query from {query_file_path}: {e}")
-        raise
+BQ_DATASET_DEV = 'dbt_dev' # O el nombre que prefieras para tu dataset de desarrollo/producción
+DBT_PROFILES_DIR = "./dbt_profiles"
 
 def main(event, context):
-    """Cloud Function entry point to run BigQuery transformations."""
-    logging.info("Starting scheduled BigQuery transformation job.")
+    """
+    Punto de entrada de la Cloud Function para ejecutar dbt.
+    Esta función asume que el proyecto dbt está empaquetado y subido con la función.
+    """
+    logging.info("Starting scheduled dbt run job.")
 
+    # Crea el directorio para el perfil de dbt si no existe
+    os.makedirs(DBT_PROFILES_DIR, exist_ok=True)
+
+    # Crea el archivo profiles.yml dinámicamente
+    # Esto es crucial para la autenticación de dbt en un entorno de Cloud Function
+    profiles_content = f"""
+dwhfinancial_profile:
+  target: dev
+  outputs:
+    dev:
+      type: bigquery
+      method: service-account-json
+      project: {PROJECT_ID}
+      dataset: {BQ_DATASET_DEV}
+      threads: 4
+      timeout_seconds: 300
+"""
+    
+    with open(f"{DBT_PROFILES_DIR}/profiles.yml", "w") as f:
+        f.write(profiles_content)
+    
+    # Invocación del comando dbt
     try:
-        # --- Step 1: Raw External to Bronze ---
-        job_config_r2b = bigquery.QueryJobConfig(
-            query_parameters=[
-                bigquery.ScalarQueryParameter("project_id", "STRING", PROJECT_ID),
-                bigquery.ScalarQueryParameter("raw_dataset", "STRING", BQ_DATASET_RAW),
-                bigquery.ScalarQueryParameter("bronze_dataset", "STRING", BQ_DATASET_BRONZE),
-                bigquery.ScalarQueryParameter("bronze_table", "STRING", BQ_TABLE_TRANSACTIONS),
-            ]
+        # Usa subprocess para llamar al comando dbt CLI
+        # --profiles-dir apunta a nuestro profiles.yml creado dinámicamente
+        command = [
+            "dbt",
+            "run",
+            "--profiles-dir", DBT_PROFILES_DIR
+        ]
+        
+        logging.info(f"Executing dbt command: {' '.join(command)}")
+        
+        # Ejecutar el comando y capturar la salida
+        process = subprocess.run(
+            command,
+            check=True,
+            capture_output=True,
+            text=True
         )
-        execute_transformation('queries/00_raw_external_to_bronze.sql', job_config_r2b)
-
-        # --- Step 2: Bronze to Silver ---
-        job_config_b2s = bigquery.QueryJobConfig(
-            query_parameters=[
-                bigquery.ScalarQueryParameter("project_id", "STRING", PROJECT_ID),
-                bigquery.ScalarQueryParameter("bronze_dataset", "STRING", BQ_DATASET_BRONZE),
-                bigquery.ScalarQueryParameter("silver_dataset", "STRING", BQ_DATASET_SILVER),
-                bigquery.ScalarQueryParameter("bronze_table", "STRING", BQ_TABLE_TRANSACTIONS),
-                bigquery.ScalarQueryParameter("silver_table", "STRING", BQ_TABLE_TRANSACTIONS),
-            ]
-        )
-        execute_transformation('queries/01_bronze_to_silver.sql', job_config_b2s)
-
-        # --- Step 3: Silver to Gold ---
-        job_config_s2g = bigquery.QueryJobConfig(
-            query_parameters=[
-                bigquery.ScalarQueryParameter("project_id", "STRING", PROJECT_ID),
-                bigquery.ScalarQueryParameter("silver_dataset", "STRING", BQ_DATASET_SILVER),
-                bigquery.ScalarQueryParameter("gold_dataset", "STRING", BQ_DATASET_GOLD),
-                bigquery.ScalarQueryParameter("silver_table", "STRING", BQ_TABLE_TRANSACTIONS),
-                bigquery.ScalarQueryParameter("gold_table", "STRING", BQ_TABLE_SUMMARY),
-            ]
-        )
-        execute_transformation('queries/02_silver_to_gold.sql', job_config_s2g)
-
-        logging.info("All transformations completed successfully.")
+        
+        logging.info("dbt run completed successfully.")
+        logging.info("dbt stdout:\n" + process.stdout)
+        
         return "OK", 200
 
+    except subprocess.CalledProcessError as e:
+        logging.critical(f"dbt command failed with exit code {e.returncode}")
+        logging.critical("dbt stderr:\n" + e.stderr)
+        logging.critical("dbt stdout:\n" + e.stdout)
+        return "Error", 500
     except Exception as e:
-        logging.critical(f"Transformation pipeline failed: {e}")
+        logging.critical(f"An unexpected error occurred: {e}")
         return "Error", 500

@@ -22,8 +22,11 @@ env:
   BQ_DATASET_BRONZE: 'dwh_02_bronze'
   BQ_DATASET_SILVER: 'dwh_03_silver'
   BQ_DATASET_GOLD: 'dwh_04_gold'
+  
+  # Dataset para los modelos de dbt
+  DBT_DATASET_DEV: 'dbt_dev'
 
-  # Tablas
+  # Tablas (se mantienen por convención, pero dbt las gestiona)
   BQ_TABLE_TRANSACTIONS: 'transactions'
   BQ_TABLE_SUMMARY: 'monthly_summary'
 
@@ -65,6 +68,7 @@ jobs:
         bq --location=${{ env.REGION_EU }} mk --dataset ${{ env.PROJECT_ID }}:${{ env.BQ_DATASET_BRONZE }} || echo "BRONZE dataset exists"
         bq --location=${{ env.REGION_EU }} mk --dataset ${{ env.PROJECT_ID }}:${{ env.BQ_DATASET_SILVER }} || echo "SILVER dataset exists"
         bq --location=${{ env.REGION_EU }} mk --dataset ${{ env.PROJECT_ID }}:${{ env.BQ_DATASET_GOLD }}   || echo "GOLD dataset exists"
+        bq --location=${{ env.REGION_EU }} mk --dataset ${{ env.PROJECT_ID }}:${{ env.DBT_DATASET_DEV }}   || echo "DBT dev dataset exists"
 
     # 3) Deploy Cloud Functions
     - name: Deploy Ingestion ETL (Drive to GCS)
@@ -92,7 +96,7 @@ jobs:
           --trigger-resource=${{ env.GCS_BUCKET }} \
           --set-env-vars="GCP_PROJECT=${{ env.PROJECT_ID }},BQ_DATASET_RAW=${{ env.BQ_DATASET_RAW }}"
 
-    - name: Deploy Transformation Function (Run BQ SQL)
+    - name: Deploy Transformation Function (dbt runner)
       run: |
         gcloud functions deploy run_bq_transformations \
           --gen2 \
@@ -102,7 +106,7 @@ jobs:
           --source=./cloud_functions/run_bq_transformations \
           --entry-point=main \
           --trigger-topic=${{ env.TRANSFORM_TOPIC }} \
-          --set-env-vars="GCP_PROJECT=${{ env.PROJECT_ID }},BQ_DATASET_RAW=${{ env.BQ_DATASET_RAW }},BQ_DATASET_BRONZE=${{ env.BQ_DATASET_BRONZE }},BQ_DATASET_SILVER=${{ env.BQ_DATASET_SILVER }},BQ_DATASET_GOLD=${{ env.BQ_DATASET_GOLD }},BQ_TABLE_TRANSACTIONS=${{ env.BQ_TABLE_TRANSACTIONS }},BQ_TABLE_SUMMARY=${{ env.BQ_TABLE_SUMMARY }}"
+          --set-env-vars="GCP_PROJECT=${{ env.PROJECT_ID }}"
 
     # 4) Crear / actualizar schedulers
     - name: Create or Update Cloud Scheduler jobs

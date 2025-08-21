@@ -4,40 +4,39 @@ import subprocess
 
 logging.basicConfig(level=logging.INFO)
 
-# --- Variables de Entorno ---
-PROJECT_ID = os.environ.get("GCP_PROJECT")
-if not PROJECT_ID:
-    # Manejo del error si la variable no está definida
-    logging.critical("Environment variable GCP_PROJECT is not set.")
-    raise ValueError("GCP_PROJECT environment variable is required.")
-
-BQ_DATASET_DEV = 'dbt_dev' # Asegúrate de que este dataset exista
-DBT_PROFILES_DIR_NAME = "dbt_profiles_tmp" # Nombre de la carpeta para perfiles, dentro de dbt_project
-DBT_PROJECT_DIR_RELATIVE = "dbt_project"  # Ruta relativa desde /workspace
+# --- Variables de Entorno (definidas como constantes globales o se obtienen dentro de main) ---
+BQ_DATASET_DEV = 'dbt_dev' # Se puede definir como constante global si es fija
+DBT_PROFILES_DIR_NAME = "dbt_profiles_tmp"
+DBT_PROJECT_DIR_RELATIVE = "dbt_project"
 
 def main(event, context):
     """
-    Punto de entrada de la Cloud Run Function para ejecutar dbt.
+    Punto de entrada de la Cloud Function para ejecutar dbt.
     """
     logging.info("Starting scheduled dbt run job.")
 
+    # --- Obtener y verificar variables de entorno dentro de main ---
+    PROJECT_ID = os.environ.get("GCP_PROJECT")
+    if not PROJECT_ID:
+        logging.critical("Environment variable GCP_PROJECT is not set.")
+        # Este return está correctamente dentro de la función main
+        return "Error: GCP_PROJECT not set", 500
+
     # --- Verificaciones de estructura ---
-    # Verificar que el directorio del proyecto existe
     if not os.path.isdir(DBT_PROJECT_DIR_RELATIVE):
-        logging.critical(f"DBT project directory '{DBT_PROJECT_DIR_RELATIVE}' not found in /workspace. Check deployment.")
+        logging.critical(f"DBT project directory '{DBT_PROJECT_DIR_RELATIVE}' not found in the deployment package.")
         return "Error: DBT project directory missing", 500
 
-    # Verificar que dbt_project.yml existe dentro del directorio del proyecto
     dbt_project_file = os.path.join(DBT_PROJECT_DIR_RELATIVE, "dbt_project.yml")
     if not os.path.isfile(dbt_project_file):
-        logging.critical(f"dbt_project.yml not found at '{dbt_project_file}'. Check deployment.")
+        logging.critical(f"dbt_project.yml not found at '{dbt_project_file}'. Check deployment package.")
         return "Error: dbt_project.yml missing", 500
 
+    # --- Configuración de Profiles ---
     # Ruta completa al directorio del proyecto
     full_dbt_project_path = os.path.abspath(DBT_PROJECT_DIR_RELATIVE)
     logging.info(f"Using DBT project directory: {full_dbt_project_path}")
 
-    # --- Configuración de Profiles ---
     # Crea el directorio para el perfil de dbt dentro del proyecto
     profiles_path = os.path.join(full_dbt_project_path, DBT_PROFILES_DIR_NAME)
     os.makedirs(profiles_path, exist_ok=True)
@@ -59,7 +58,7 @@ dwhfinancial_profile:  # Este nombre debe coincidir con el profile: en tu dbt_pr
       dataset: "{BQ_DATASET_DEV}"
       threads: 4
       timeout_seconds: 300
-      # keyfile o keyfile_json se obtienen del service account asociado al Cloud Run
+      # keyfile o keyfile_json se obtienen del service account asociado a la Cloud Function
 """
 
     profile_file_path = os.path.join(profiles_path, "profiles.yml")
@@ -88,7 +87,7 @@ dwhfinancial_profile:  # Este nombre debe coincidir con el profile: en tu dbt_pr
         # Ejecutar el comando, cambiando el directorio de trabajo (cwd) al del proyecto dbt
         process = subprocess.run(
             command,
-            cwd=full_dbt_project_path, # <--- Cambio clave
+            cwd=full_dbt_project_path, # <--- Cambio clave: ejecutar desde el directorio del proyecto
             check=True, # Lanza CalledProcessError si el comando falla (exit code != 0)
             capture_output=True,
             text=True,
@@ -102,6 +101,7 @@ dwhfinancial_profile:  # Este nombre debe coincidir con el profile: en tu dbt_pr
         if process.stderr:
             logging.debug("dbt stderr (might contain warnings/logs):\n" + process.stderr)
 
+        # En Cloud Functions, devolver una tupla (cuerpo_respuesta, código_estado)
         return "OK: dbt run finished", 200
 
     except subprocess.CalledProcessError as e:
@@ -112,6 +112,7 @@ dwhfinancial_profile:  # Este nombre debe coincidir con el profile: en tu dbt_pr
             logging.critical("dbt stderr:\n" + e.stderr)
         else:
             logging.critical("No stderr captured from dbt process.")
+        # En Cloud Functions, devolver una tupla (cuerpo_respuesta, código_estado)
         return f"Error: dbt command failed (exit code {e.returncode})", 500
 
     except subprocess.TimeoutExpired as e:
@@ -121,8 +122,10 @@ dwhfinancial_profile:  # Este nombre debe coincidir con el profile: en tu dbt_pr
             logging.info("Partial dbt stdout before timeout:\n" + e.stdout.decode() if isinstance(e.stdout, bytes) else e.stdout)
         if e.stderr:
             logging.info("Partial dbt stderr before timeout:\n" + e.stderr.decode() if isinstance(e.stderr, bytes) else e.stderr)
+        # En Cloud Functions, devolver una tupla (cuerpo_respuesta, código_estado)
         return "Error: dbt command timed out", 500
 
     except Exception as e:
         logging.critical(f"An unexpected error occurred during dbt execution: {e}", exc_info=True) # exc_info=True para stack trace
+        # En Cloud Functions, devolver una tupla (cuerpo_respuesta, código_estado)
         return "Error: Unexpected failure", 500

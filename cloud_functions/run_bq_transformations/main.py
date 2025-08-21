@@ -7,7 +7,8 @@ logging.basicConfig(level=logging.INFO)
 # --- Variables de Entorno ---
 PROJECT_ID = os.environ.get("GCP_PROJECT")
 BQ_DATASET_DEV = 'dbt_dev' # O el nombre que prefieras para tu dataset de desarrollo/producción
-DBT_PROFILES_DIR = "./dbt_profiles"
+DBT_PROFILES_DIR = "dbt_profiles"
+DBT_PROJECT_DIR = "dbt_project" # Nuevo: La carpeta de tu proyecto dbt
 
 def main(event, context):
     """
@@ -17,10 +18,11 @@ def main(event, context):
     logging.info("Starting scheduled dbt run job.")
 
     # Crea el directorio para el perfil de dbt si no existe
-    os.makedirs(DBT_PROFILES_DIR, exist_ok=True)
+    # El path es relativo al directorio de trabajo actual de la función
+    profiles_path = os.path.join(DBT_PROJECT_DIR, DBT_PROFILES_DIR)
+    os.makedirs(profiles_path, exist_ok=True)
 
     # Crea el archivo profiles.yml dinámicamente
-    # Esto es crucial para la autenticación de dbt en un entorno de Cloud Function
     profiles_content = f"""
 dwhfinancial_profile:
   target: dev
@@ -34,17 +36,19 @@ dwhfinancial_profile:
       timeout_seconds: 300
 """
     
-    with open(f"{DBT_PROFILES_DIR}/profiles.yml", "w") as f:
+    with open(os.path.join(profiles_path, "profiles.yml"), "w") as f:
         f.write(profiles_content)
     
     # Invocación del comando dbt
     try:
         # Usa subprocess para llamar al comando dbt CLI
-        # --profiles-dir apunta a nuestro profiles.yml creado dinámicamente
+        # El comando se ejecuta desde el directorio raíz de la función
+        # Por eso, necesitamos especificar la ruta completa al proyecto dbt y al perfil.
         command = [
             "dbt",
-            "run",
-            "--profiles-dir", DBT_PROFILES_DIR
+            "--project-dir", DBT_PROJECT_DIR,  # Apunta al directorio del proyecto dbt
+            "--profiles-dir", profiles_path,    # Apunta al directorio del perfil
+            "run"
         ]
         
         logging.info(f"Executing dbt command: {' '.join(command)}")

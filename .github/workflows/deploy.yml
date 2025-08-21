@@ -106,7 +106,8 @@ jobs:
           --source=./cloud_functions/run_bq_transformations \
           --entry-point=main \
           --trigger-topic=${{ env.TRANSFORM_TOPIC }} \
-          --set-env-vars="GCP_PROJECT=${{ env.PROJECT_ID }}"
+          --set-env-vars="GCP_PROJECT=${{ env.PROJECT_ID }} \"
+          --memory=512Mi
 
     # 4) Crear / actualizar schedulers
     - name: Create or Update Cloud Scheduler jobs
@@ -129,7 +130,7 @@ jobs:
           --time-zone="Europe/Madrid"
 
         gcloud scheduler jobs create pubsub ${{ env.TRANSFORM_SCHEDULER_JOB }} \
-          --schedule="0 * * * *" \
+          --schedule="5 * * * *" \
           --topic=${{ env.TRANSFORM_TOPIC }} \
           --message-body="Run Transformation" \
           --location=${{ env.REGION_EU }} \
@@ -138,7 +139,7 @@ jobs:
           --description="Dispara las transformaciones de BigQuery." \
           || \
         gcloud scheduler jobs update pubsub ${{ env.TRANSFORM_SCHEDULER_JOB }} \
-          --schedule="0 * * * *" \
+          --schedule="5 * * * *" \
           --topic=${{ env.TRANSFORM_TOPIC }} \
           --message-body="Run Transformation" \
           --location=${{ env.REGION_EU }} \

@@ -108,6 +108,7 @@ jobs:
           --trigger-topic=${{ env.TRANSFORM_TOPIC }} \
           --set-env-vars="GCP_PROJECT=${{ env.PROJECT_ID }} \"
           --memory=512Mi
+          --timeout=300s
 
     # 4) Crear / actualizar schedulers
     - name: Create or Update Cloud Scheduler jobs

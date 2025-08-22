@@ -5,5 +5,5 @@ sources:
     schema: dwh_01_raw # Tu dataset raw
     tables:
       - name: bankinter_account
-      - name: revolut_account
+      - name: bankinter_card
       # Agrega aquí futuras tablas externas

@@ -75,10 +75,8 @@ dwhfinancial_profile:
         command = [
             "dbt",
             "run",
-            "--profiles-dir", DBT_PROFILES_DIR_NAME, # Ruta relativa desde el cwd (full_dbt_project_path)
-            # Puedes añadir más argumentos aquí si los necesitas, por ejemplo:
-            # "--target", "dev",
-            # "--full-refresh" # (Descomenta si necesitas refresco completo)
+            "--profiles-dir", DBT_PROFILES_DIR_NAME,
+            "--source-paths", "." 
         ]
 
         logging.info(f"Executing dbt command from '{full_dbt_project_path}': {' '.join(command)}")

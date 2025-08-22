@@ -100,7 +100,7 @@ jobs:
       run: |
         gcloud functions deploy run_bq_transformations \
           --gen2 \
-          --region=${{ env.REGION_EU }} \
+          --region=${{ env.REGION_US }} \
           --runtime=python311 \
           --project=${{ env.PROJECT_ID }} \
           --source=./cloud_functions/run_bq_transformations \

@@ -29,7 +29,7 @@ SELECT
 FROM (
   SELECT * FROM {{ source('financial_raw', 'bankinter_account') }}
   UNION ALL
-  SELECT * FROM {{ source('financial_raw', 'revolut_account') }}
+  SELECT * FROM {{ source('financial_raw', 'bankinter_card') }}
 ) AS raw_data
 
 {% if is_incremental() %}

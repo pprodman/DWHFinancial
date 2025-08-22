@@ -45,20 +45,20 @@ def main(event, context):
     # Crea el archivo profiles.yml dinámicamente
     # Asegúrate de que el nombre del perfil en profiles.yml coincida con el de dbt_project.yml
     profiles_content = f"""
-        config:
-        send_anonymous_usage_stats: False
+config:
+  send_anonymous_usage_stats: False
 
-        dwhfinancial_profile:
-        target: dev
-        outputs:
-            dev:
-            type: bigquery
-            method: service-account
-            project: "{PROJECT_ID}"
-            dataset: "{BQ_DATASET_DEV}"
-            threads: 4
-            timeout_seconds: 300
-        """
+dwhfinancial_profile:
+  target: dev
+  outputs:
+    dev:
+      type: bigquery
+      method: service-account
+      project: "{PROJECT_ID}"
+      dataset: "{BQ_DATASET_DEV}"
+      threads: 4
+      timeout_seconds: 300
+"""
 
     profile_file_path = os.path.join(profiles_path, "profiles.yml")
     try:

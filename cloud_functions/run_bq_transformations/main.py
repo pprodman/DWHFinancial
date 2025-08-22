@@ -71,34 +71,49 @@ dwhfinancial_profile:
 
     # --- Ejecución de dbt ---
     try:
-        # Comando dbt. No se necesita --project-dir porque el cwd será el directorio del proyecto.
-        command = [
+        # 1. Ejecutar el comando de compilación primero
+        logging.info("Executing dbt compile command.")
+        compile_command = [
+            "dbt",
+            "compile",
+            "--profiles-dir", DBT_PROFILES_DIR_NAME,
+        ]
+
+        compile_process = subprocess.run(
+            compile_command,
+            cwd=full_dbt_project_path,
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=300
+        )
+        logging.info("dbt compile completed successfully.")
+        if compile_process.stdout:
+            logging.info("dbt compile stdout:\n" + compile_process.stdout)
+
+        # 2. Ejecutar el comando de ejecución
+        logging.info("Executing dbt run command.")
+        run_command = [
             "dbt",
             "run",
             "--profiles-dir", DBT_PROFILES_DIR_NAME,
-            "--source-paths", "." 
         ]
 
-        logging.info(f"Executing dbt command from '{full_dbt_project_path}': {' '.join(command)}")
-
-        # Ejecutar el comando, cambiando el directorio de trabajo (cwd) al del proyecto dbt
         process = subprocess.run(
-            command,
-            cwd=full_dbt_project_path, # <--- Cambio clave: ejecutar desde el directorio del proyecto
-            check=True, # Lanza CalledProcessError si el comando falla (exit code != 0)
+            run_command,
+            cwd=full_dbt_project_path,
+            check=True,
             capture_output=True,
             text=True,
-            timeout=600 # Timeout en segundos (ajusta según la duración esperada)
+            timeout=600
         )
 
         logging.info("dbt run completed successfully.")
         if process.stdout:
             logging.info("dbt stdout:\n" + process.stdout)
-        # dbt a veces imprime información en stderr incluso si tiene éxito
         if process.stderr:
             logging.debug("dbt stderr (might contain warnings/logs):\n" + process.stderr)
 
-        # En Cloud Functions, devolver una tupla (cuerpo_respuesta, código_estado)
         return "OK: dbt run finished", 200
 
     except subprocess.CalledProcessError as e:
@@ -109,20 +124,16 @@ dwhfinancial_profile:
             logging.critical("dbt stderr:\n" + e.stderr)
         else:
             logging.critical("No stderr captured from dbt process.")
-        # En Cloud Functions, devolver una tupla (cuerpo_respuesta, código_estado)
         return f"Error: dbt command failed (exit code {e.returncode})", 500
 
     except subprocess.TimeoutExpired as e:
         logging.critical(f"dbt command timed out after {e.timeout} seconds.")
-        # Intentar obtener salida parcial si está disponible
         if e.stdout:
             logging.info("Partial dbt stdout before timeout:\n" + e.stdout.decode() if isinstance(e.stdout, bytes) else e.stdout)
         if e.stderr:
             logging.info("Partial dbt stderr before timeout:\n" + e.stderr.decode() if isinstance(e.stderr, bytes) else e.stderr)
-        # En Cloud Functions, devolver una tupla (cuerpo_respuesta, código_estado)
         return "Error: dbt command timed out", 500
 
     except Exception as e:
-        logging.critical(f"An unexpected error occurred during dbt execution: {e}", exc_info=True) # exc_info=True para stack trace
-        # En Cloud Functions, devolver una tupla (cuerpo_respuesta, código_estado)
+        logging.critical(f"An unexpected error occurred during dbt execution: {e}", exc_info=True)
         return "Error: Unexpected failure", 500

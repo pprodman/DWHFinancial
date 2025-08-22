@@ -5,7 +5,7 @@ import subprocess
 logging.basicConfig(level=logging.INFO)
 
 # --- Variables de Entorno (definidas como constantes globales o se obtienen dentro de main) ---
-BQ_DATASET_DEV = 'dbt_dev' # Se puede definir como constante global si es fija
+BQ_DATASET_RAW = 'dwh_01_raw'
 DBT_PROFILES_DIR_NAME = "dbt_profiles_tmp"
 DBT_PROJECT_DIR_RELATIVE = "dbt_project"
 
@@ -55,7 +55,7 @@ dwhfinancial_profile:
       type: bigquery
       method: service-account
       project: "{PROJECT_ID}"
-      dataset: "{BQ_DATASET_DEV}"
+      dataset: "{BQ_DATASET_RAW}"
       threads: 4
       timeout_seconds: 300
 """

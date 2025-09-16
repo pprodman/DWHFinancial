@@ -1,6 +1,6 @@
 # .github/workflows/deploy-ingestion-function.yml
 
-name: 'Deploy: Ingestion Cloud Function (Drive to GCS)'
+name: 'CI/CD: Ingestion Cloud Function (Drive to GCS)'
 
 on:
   push:
@@ -8,22 +8,22 @@ on:
     paths:
       - 'ingestion_function/**'
       - '.github/workflows/deploy-ingestion-function.yml'
+  
   workflow_dispatch:
+    inputs:
+      branch:
+        description: 'La rama que se va a desplegar (dejar como "main" para producción)'
+        required: true
+        default: 'main'
 
 env:
-  # --- Configuración del Proyecto GCP ---
   PROJECT_ID: 'dwhfinancial'
-  PROJECT_NUMBER: '675312276583'
-  REGION: 'us-central1' # O la región que prefieras para las funciones
-
-  # --- Configuración de la Aplicación ---
+  REGION: 'us-central1'
   GCS_BUCKET: 'dwhfinancial-data-feed'
   DRIVE_SECRET_NAME: 'drive-service-account-key'
-
-  # --- Cuentas de Servicio ---
   FUNCTION_SERVICE_ACCOUNT: 'drive-reader-sa@dwhfinancial.iam.gserviceaccount.com'
   DEPLOYER_SERVICE_ACCOUNT: 'github-actions-deployer@dwhfinancial.iam.gserviceaccount.com'
-  
+
 jobs:
   deploy-ingestion-function:
     name: Deploy Ingestion Function
@@ -33,14 +33,15 @@ jobs:
       id-token: 'write'
 
     steps:
-      - name: Checkout repository
+      - name: Checkout code from specified branch
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.branch || github.ref }}
 
       - name: Authenticate to Google Cloud
         id: auth
         uses: 'google-github-actions/auth@v2'
         with:
-          # El WIF Provider sigue siendo un secreto para mantenerlo fuera del código
           workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ env.DEPLOYER_SERVICE_ACCOUNT }}
 

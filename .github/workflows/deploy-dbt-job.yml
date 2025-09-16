@@ -1,6 +1,6 @@
 # .github/workflows/deploy-dbt-job.yml
 
-name: 'Deploy: dbt Transformation Cloud Run Job'
+name: 'CI/CD: dbt Transformation Cloud Run Job'
 
 on:
   push:
@@ -8,39 +8,78 @@ on:
     paths:
       - 'dbt_project/**'
       - '.github/workflows/deploy-dbt-job.yml'
+  
+  pull_request:
+    branches: [ 'main' ]
+    paths:
+      - 'dbt_project/**'
+  
   workflow_dispatch:
 
 env:
-  # --- Configuración del Proyecto GCP ---
   PROJECT_ID: 'dwhfinancial'
-  PROJECT_NUMBER: '675312276583'
-  REGION: 'us-central1' # O la región que prefieras para los jobs
-
-  # --- Configuración de la Aplicación ---
+  REGION: 'us-central1'
   GCS_BUCKET: 'dwhfinancial-data-feed'
   JOB_NAME: 'dbt-transform-job'
-
-  # --- Cuentas de Servicio ---
   JOB_SERVICE_ACCOUNT: 'drive-reader-sa@dwhfinancial.iam.gserviceaccount.com'
   DEPLOYER_SERVICE_ACCOUNT: 'github-actions-deployer@dwhfinancial.iam.gserviceaccount.com'
 
 jobs:
-  deploy-dbt-job:
-    name: Build and Deploy dbt Job
+  # --- JOB 1: VALIDACIÓN EN PULL REQUEST (CI) ---
+  validate-dbt-changes:
+    name: Validate dbt on Pull Request
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     permissions:
       contents: 'read'
       id-token: 'write'
 
     steps:
-      - name: Checkout repository
+      - name: Checkout PR code
         uses: actions/checkout@v4
 
       - name: Authenticate to Google Cloud
         id: auth
         uses: 'google-github-actions/auth@v2'
         with:
-          # El WIF Provider sigue siendo un secreto
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ env.DEPLOYER_SERVICE_ACCOUNT }}
+
+      - name: Set up Python and dbt
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+      - name: Install dbt dependencies
+        run: pip install dbt-bigquery
+
+      - name: Validate dbt project
+        working-directory: ./dbt_project
+        run: |
+          echo "Validating dbt project..."
+          # Compila el proyecto para verificar errores de sintaxis y referencias
+          dbt compile --profiles-dir . --target dev
+          
+          echo "Building models and running tests in DEV dataset..."
+          # Ejecuta modelos y tests en un dataset de desarrollo para una validación completa
+          dbt build --profiles-dir . --target dev
+
+  # --- JOB 2: DESPLIEGUE A PRODUCCIÓN (CD) ---
+  deploy-dbt-job:
+    name: Deploy dbt Job to Production
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    
+    steps:
+      - name: Checkout main branch code
+        uses: actions/checkout@v4
+        
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: 'google-github-actions/auth@v2'
+        with:
           workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ env.DEPLOYER_SERVICE_ACCOUNT }}
 

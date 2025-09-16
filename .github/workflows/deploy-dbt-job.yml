@@ -18,7 +18,7 @@ env:
   REGION: 'us-central1'
   GCS_BUCKET: 'dwhfinancial-data-feed'
   JOB_NAME: 'dbt-transform-job'
-  JOB_SERVICE_ACCOUNT: 'driver-reader-sa@dwhfinancial.iam.gserviceaccount.com'
+  JOB_SERVICE_ACCOUNT: 'drive-reader-sa@dwhfinancial.iam.gserviceaccount.com'
   DEPLOYER_SERVICE_ACCOUNT: 'github-actions-deployer@dwhfinancial.iam.gserviceaccount.com'
 
 jobs:

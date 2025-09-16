@@ -18,7 +18,7 @@ env:
   REGION: 'us-central1'
   GCS_BUCKET: 'dwhfinancial-data-feed'
   DRIVE_SECRET_NAME: 'drive-service-account-key'
-  FUNCTION_SERVICE_ACCOUNT: 'pipeline-bancario-sa@dwhfinancial.iam.gserviceaccount.com'
+  FUNCTION_SERVICE_ACCOUNT: 'driver-reader-sa@dwhfinancial.iam.gserviceaccount.com'
   DEPLOYER_SERVICE_ACCOUNT: 'github-actions-deployer@dwhfinancial.iam.gserviceaccount.com'
 
 jobs:

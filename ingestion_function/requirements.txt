@@ -1,7 +1,12 @@
+# Framework para ejecutar la función
 functions-framework
+
+# Librerías de Google Cloud
 google-cloud-storage
 google-cloud-secret-manager
 google-api-python-client
 google-auth
+
+# Librerías de procesamiento de datos
 pandas
 openpyxl

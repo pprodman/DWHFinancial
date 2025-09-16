@@ -1,9 +1,0 @@
-version: 2
-sources:
-  - name: financial_raw
-    database: dwhfinancial # Reemplazar con tu ID de proyecto
-    schema: dwh_01_raw # Tu dataset raw
-    tables:
-      - name: bankinter_account
-      - name: bankinter_card
-      # Agrega aquí futuras tablas externas

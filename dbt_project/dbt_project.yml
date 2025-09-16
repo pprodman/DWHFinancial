@@ -1,0 +1,23 @@
+name: 'mi_pipeline_bancario'
+version: '1.0.0'
+config-version: 2
+
+profile: 'mi_pipeline_bancario'
+
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+target-path: "target"
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+models:
+  mi_pipeline_bancario:
+    staging:
+      +materialized: incremental
+      +schema: bancos_bronze # Aplica este schema a todos los modelos en 'staging'

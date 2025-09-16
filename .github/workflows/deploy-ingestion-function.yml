@@ -1,0 +1,64 @@
+# .github/workflows/deploy-ingestion-function.yml
+
+name: 'Deploy: Ingestion Cloud Function (Drive to GCS)'
+
+on:
+  push:
+    branches: [ 'main' ]
+    paths:
+      - 'ingestion_function/**'
+      - '.github/workflows/deploy-ingestion-function.yml'
+  workflow_dispatch:
+
+env:
+  # --- Configuración del Proyecto GCP ---
+  PROJECT_ID: 'dwhfinancial'
+  PROJECT_NUMBER: '675312276583'
+  REGION: 'us-central1' # O la región que prefieras para las funciones
+
+  # --- Configuración de la Aplicación ---
+  GCS_BUCKET: 'dwhfinancial-data-feed'
+  DRIVE_SECRET_NAME: 'drive-service-account-key'
+
+  # --- Cuentas de Servicio ---
+  FUNCTION_SERVICE_ACCOUNT: 'drive-reader-sa@dwhfinancial.iam.gserviceaccount.com'
+  DEPLOYER_SERVICE_ACCOUNT: 'github-actions-deployer@dwhfinancial.iam.gserviceaccount.com'
+  
+jobs:
+  deploy-ingestion-function:
+    name: Deploy Ingestion Function
+    runs-on: ubuntu-latest
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: 'google-github-actions/auth@v2'
+        with:
+          # El WIF Provider sigue siendo un secreto para mantenerlo fuera del código
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ env.DEPLOYER_SERVICE_ACCOUNT }}
+
+      - name: Set up gcloud CLI
+        uses: 'google-github-actions/setup-gcloud@v2'
+
+      - name: Deploy Cloud Function Gen2
+        run: |
+          gcloud functions deploy ingest-bank-statements \
+            --gen2 \
+            --project=${{ env.PROJECT_ID }} \
+            --region=${{ env.REGION }} \
+            --runtime=python311 \
+            --source=./ingestion_function \
+            --entry-point=ingest_bank_statements \
+            --trigger-http \
+            --allow-unauthenticated \
+            --set-env-vars="GCP_PROJECT=${{ env.PROJECT_ID }},GCS_BUCKET_NAME=${{ env.GCS_BUCKET }},DRIVE_PARENT_FOLDER_ID=${{ secrets.DRIVE_PARENT_FOLDER_ID }},DRIVE_SECRET_NAME=${{ env.DRIVE_SECRET_NAME }}" \
+            --service-account=${{ env.FUNCTION_SERVICE_ACCOUNT }} \
+            --memory=512Mi \
+            --timeout=300s

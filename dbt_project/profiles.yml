@@ -1,0 +1,17 @@
+mi_pipeline_bancario:
+  target: prod
+  outputs:
+    prod:
+      type: bigquery
+      method: oauth
+      project: dwhfinancial
+      dataset: bancos_bronze
+      threads: 4
+
+    dev:
+      type: bigquery
+      method: service-account
+      project: dwhfinancial
+      dataset: dbt_dev
+      threads: 4
+      keyfile: /path/to/your/local/credentials.json

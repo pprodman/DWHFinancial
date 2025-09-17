@@ -43,15 +43,21 @@ jobs:
       - name: Set up gcloud CLI
         uses: 'google-github-actions/setup-gcloud@v2'
 
-      - name: Build and Deploy dbt Job to Cloud Run
+      - name: Build Docker Image with Cloud Build
+        run: |
+          gcloud builds submit ./dbt_project \
+            --tag us-central1-docker.pkg.dev/${{ env.PROJECT_ID }}/cloud-run-source-deploy/dbt-job:latest \
+            --project=${{ env.PROJECT_ID }} \
+            --service-account=projects/${{ env.PROJECT_ID }}/serviceAccounts/cloud-run-build-sa@dwhfinancial.iam.gserviceaccount.com
+
+      - name: Deploy dbt Job to Cloud Run
         run: |
           gcloud run jobs deploy ${{ env.JOB_NAME }} \
             --project=${{ env.PROJECT_ID }} \
             --region=${{ env.REGION }} \
-            --source=./dbt_project \
+            --image=us-central1-docker.pkg.dev/${{ env.PROJECT_ID }}/cloud-run-source-deploy/dbt-job:latest \
             --task-timeout=15m \
             --set-env-vars="GCS_BUCKET_NAME=${{ env.GCS_BUCKET }}" \
-            --service-account=${{ env.JOB_SERVICE_ACCOUNT }} \
-            --build-service-account=projects/${{ env.PROJECT_ID }}/serviceAccounts/cloud-run-build-sa@dwhfinancial.iam.gserviceaccount.com
+            --service-account=${{ env.JOB_SERVICE_ACCOUNT }}
 
                   

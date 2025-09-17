@@ -2,7 +2,7 @@ version: 2
 
 sources:
   - name: gcs_raw_source
-    database: tu-proyecto-gcp # Reemplazar con tu ID de proyecto
+    database: dwhfinancial # Reemplazar con tu ID de proyecto
     schema: bancos_bronze 
     loader: cloud_storage
     tables:

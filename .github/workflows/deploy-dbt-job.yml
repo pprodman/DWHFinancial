@@ -51,4 +51,7 @@ jobs:
             --source=./dbt_project \
             --task-timeout=15m \
             --set-env-vars="GCS_BUCKET_NAME=${{ env.GCS_BUCKET }}" \
-            --service-account=${{ env.JOB_SERVICE_ACCOUNT }}
+            --service-account=${{ env.JOB_SERVICE_ACCOUNT }} \
+            --build-service-account=projects/${{ env.PROJECT_ID }}/serviceAccounts/cloud-run-build-sa@dwhfinancial.iam.gserviceaccount.com
+
+                  

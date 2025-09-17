@@ -20,4 +20,4 @@ models:
   mi_pipeline_bancario:
     staging:
       +materialized: incremental
-      +schema: bancos_bronze # Aplica este schema a todos los modelos en 'staging'
+      +schema: bancos_bronze

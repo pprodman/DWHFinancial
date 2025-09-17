@@ -48,7 +48,8 @@ jobs:
           gcloud builds submit ./dbt_project \
             --tag us-central1-docker.pkg.dev/${{ env.PROJECT_ID }}/cloud-run-source-deploy/dbt-job:latest \
             --project=${{ env.PROJECT_ID }} \
-            --service-account=projects/${{ env.PROJECT_ID }}/serviceAccounts/cloud-run-build-sa@dwhfinancial.iam.gserviceaccount.com
+            --service-account=projects/${{ env.PROJECT_ID }}/serviceAccounts/cloud-run-build-sa@dwhfinancial.iam.gserviceaccount.com \
+            --logging=CLOUD_LOGGING_ONLY
 
       - name: Deploy dbt Job to Cloud Run
         run: |
@@ -59,5 +60,3 @@ jobs:
             --task-timeout=15m \
             --set-env-vars="GCS_BUCKET_NAME=${{ env.GCS_BUCKET }}" \
             --service-account=${{ env.JOB_SERVICE_ACCOUNT }}
-
-                  

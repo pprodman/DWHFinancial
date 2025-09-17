@@ -8,15 +8,10 @@ WORKDIR /usr/app/dbt
 RUN pip install dbt-bigquery
 
 # Copia tu proyecto dbt al contenedor
-# Copiamos primero los archivos de configuración para aprovechar el cache de Docker
-COPY dbt_project.yml .
-COPY packages.yml .
+COPY . .
 
-# Copia el resto del proyecto
-COPY models/ ./models
+# Asegurarse de que el script tiene permisos de ejecución
+RUN chmod +x run_dbt.sh
 
-# (Opcional) Instala dependencias si usas packages.yml
-# RUN dbt deps --profiles-dir .
-
-# Define el punto de entrada para que el job de Cloud Run pueda ejecutar comandos dbt
-ENTRYPOINT ["dbt"]
+# Define el script de shell como el punto de entrada
+ENTRYPOINT ["./run_dbt.sh"]

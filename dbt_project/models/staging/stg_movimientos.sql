@@ -13,11 +13,9 @@ SELECT
     concepto,
     importe,
     banco,
-    tipo_cuenta,
-    _FILE_NAME AS archivo_origen,
-    CURRENT_TIMESTAMP() AS fecha_carga
+    tipo_cuenta
     
-FROM {{ source('gcs_raw_source', 'movimientos_raw_csv') }}
+FROM {{ source('gcs_raw_source', 'movimientos_raw_jsonl') }}
 
 {% if is_incremental() %}
   -- Filtra para procesar solo los registros de archivos nuevos

@@ -59,3 +59,10 @@ jobs:
             --task-timeout=15m \
             --set-env-vars="GCS_BUCKET_NAME=${{ env.GCS_BUCKET }}" \
             --service-account=${{ env.JOB_SERVICE_ACCOUNT }}
+
+      - name: Execute dbt Job
+        run: |
+          gcloud run jobs execute ${{ env.JOB_NAME }} \
+            --project=${{ env.PROJECT_ID }} \
+            --region=${{ env.REGION }} \
+            --wait

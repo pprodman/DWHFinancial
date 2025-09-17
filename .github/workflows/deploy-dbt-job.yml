@@ -46,10 +46,9 @@ jobs:
       - name: Build Docker Image with Cloud Build
         run: |
           gcloud builds submit ./dbt_project \
-            --tag us-central1-docker.pkg.dev/${{ env.PROJECT_ID }}/cloud-run-source-deploy/dbt-job:latest \
-            --project=${{ env.PROJECT_ID }} \
-            --service-account=projects/${{ env.PROJECT_ID }}/serviceAccounts/cloud-run-build-sa@dwhfinancial.iam.gserviceaccount.com \
-            --logging=CLOUD_LOGGING_ONLY
+            --config=./dbt_project/cloudbuild.yaml \
+            --substitutions=_IMAGE_TAG=us-central1-docker.pkg.dev/${{ env.PROJECT_ID }}/cloud-run-source-deploy/dbt-job:latest \
+            --project=${{ env.PROJECT_ID }}
 
       - name: Deploy dbt Job to Cloud Run
         run: |

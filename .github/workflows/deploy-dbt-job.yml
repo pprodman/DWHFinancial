@@ -51,15 +51,4 @@ jobs:
             --source=./dbt_project \
             --task-timeout=15m \
             --set-env-vars="GCS_BUCKET_NAME=${{ env.GCS_BUCKET }}" \
-            --service-account=${{ env.JOB_SERVICE_ACCOUNT }} \
-            --args="--fail-fast" \
-            --args="run" \
-            --args="--" \
-            --args="--profiles-dir" \
-            --args="." \
-            --args="&&" \
-            --args="dbt" \
-            --args="test" \
-            --args="--" \
-            --args="--profiles-dir" \
-            --args="."
+            --service-account=${{ env.JOB_SERVICE_ACCOUNT }}

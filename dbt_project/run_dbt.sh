@@ -3,36 +3,23 @@
 set -e
 set -x
 
-echo "=== DEBUG: Current working directory ==="
+echo "=== DEBUG: Current directory ==="
 pwd
 
-echo "=== DEBUG: Listing all files in current directory ==="
+echo "=== DEBUG: Files in directory ==="
 ls -la
 
-echo "=== DEBUG: Checking if profiles.yml exists ==="
-if [ -f "profiles.yml" ]; then
-    echo "✅ profiles.yml FOUND!"
-    echo "=== Content of profiles.yml ==="
-    cat profiles.yml
-else
-    echo "❌ ERROR: profiles.yml NOT FOUND in current directory!"
-    exit 1
-fi
+echo "=== DEBUG: profiles.yml content ==="
+cat profiles.yml
 
-echo "=== DEBUG: Checking if dbt_project.yml exists ==="
-if [ -f "dbt_project.yml" ]; then
-    echo "✅ dbt_project.yml FOUND!"
-    echo "=== Content of dbt_project.yml ==="
-    cat dbt_project.yml
-else
-    echo "❌ ERROR: dbt_project.yml NOT FOUND!"
-    exit 1
-fi
+echo "=== DEBUG: dbt_project.yml content ==="
+cat dbt_project.yml
 
 echo "--- Running dbt models... ---"
-dbt run --profiles-dir . --target prod --fail-fast
+# Ejecuta dbt y redirige stderr a stdout para ver todos los errores
+dbt run --profiles-dir . --target prod --fail-fast --debug 2>&1
 
 echo "--- Running dbt tests... ---"
-dbt test --profiles-dir . --target prod
+dbt test --profiles-dir . --target prod --debug 2>&1
 
 echo "--- dbt run and test completed successfully! ---"

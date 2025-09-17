@@ -2,17 +2,16 @@ version: 2
 
 sources:
   - name: gcs_raw_source
-    database: dwhfinancial # Reemplazar con tu ID de proyecto
-    schema: bancos_bronze 
+    database: dwhfinancial
+    schema: bancos_bronze
     loader: cloud_storage
     tables:
-      - name: movimientos_raw_csv
+      - name: movimientos_raw_jsonl  # ← Recomendado: refleja el formato real
         external:
-          location: "gs://{{ env_var('GCS_BUCKET_NAME') }}/*/*/*.csv"
+          location: "gs://{{ env_var('GCS_BUCKET_NAME') }}/*/*/*.jsonl"  # ← ¡Cambia a .jsonl!
           options:
-            format: CSV
-            skip_leading_rows: 1 # Nuestros CSV generados tienen cabecera
-            allow_quoted_newlines: true
+            format: JSON  # ← ¡Esto sigue siendo correcto! BigQuery llama "JSON" a ndjson/jsonl
+            # skip_leading_rows: 1 ← ¡Elimínalo! No aplica a JSON
           hive_partitioning_options:
             mode: CUSTOM
             source_uri_prefix: "gs://{{ env_var('GCS_BUCKET_NAME') }}/{banco:STRING}/{tipo_cuenta:STRING}"

@@ -20,4 +20,3 @@ models:
   mi_pipeline_bancario:
     staging:
       +materialized: incremental
-      +schema: bancos_bronze

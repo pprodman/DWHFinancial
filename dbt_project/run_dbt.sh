@@ -15,20 +15,20 @@ cat profiles.yml
 echo "=== DEBUG: dbt_project.yml content ==="
 cat dbt_project.yml
 
-# Crear directorio de logs si no existe
+echo "=== DEBUG: Creating logs directory ==="
 mkdir -p logs
 
 echo "--- Running dbt models... ---"
-# Ejecutar dbt y guardar logs en archivo, incluso si falla
+# Ejecutar dbt y capturar TODO en un archivo, incluso si falla
 if ! dbt run --profiles-dir . --target prod --fail-fast --debug 2>&1 | tee logs/dbt_run.log; then
-    echo "❌ dbt run failed. Printing logs for debugging:"
+    echo "❌ dbt run failed. Printing full logs for debugging:"
     cat logs/dbt_run.log
     exit 1
 fi
 
 echo "--- Running dbt tests... ---"
 if ! dbt test --profiles-dir . --target prod --debug 2>&1 | tee logs/dbt_test.log; then
-    echo "❌ dbt test failed. Printing logs for debugging:"
+    echo "❌ dbt test failed. Printing full logs for debugging:"
     cat logs/dbt_test.log
     exit 1
 fi

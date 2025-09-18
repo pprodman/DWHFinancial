@@ -1,24 +1,21 @@
 {{
   config(
     materialized='incremental',
-    unique_key='transaction_id'  -- ¡Mucho más limpio y seguro!
+    unique_key='transaccion_id'
   )
 }}
 
 SELECT
-    -- Los datos ya vienen limpios y con los tipos correctos desde la ingesta.
-    -- El SQL solo se encarga de seleccionar y añadir metadatos de carga.
-    transaction_id,
+    transaccion_id,
     fecha,
     concepto,
     importe,
-    banco,
-    tipo_cuenta
-    
+    entidad,
+    origen,
+    _FILE_NAME AS archivo_origen -- ✅ Para lógica incremental
 FROM {{ source('gcs_raw_source', 'movimientos_raw_jsonl') }}
 
 {% if is_incremental() %}
-  -- Filtra para procesar solo los registros de archivos nuevos
   WHERE _FILE_NAME NOT IN (
     SELECT DISTINCT archivo_origen FROM {{ this }}
   )

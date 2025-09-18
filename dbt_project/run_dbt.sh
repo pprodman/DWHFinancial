@@ -19,18 +19,24 @@ echo "=== DEBUG: Creating logs directory ==="
 mkdir -p logs
 
 echo "--- Running dbt models... ---"
-# Ejecutar dbt y capturar TODO en un archivo, incluso si falla
-if ! dbt run --profiles-dir . --target prod --fail-fast --debug 2>&1 | tee logs/dbt_run.log; then
-    echo "❌ dbt run failed. Printing full logs for debugging:"
+# Ejecutar dbt y capturar TODO en un archivo
+dbt run --profiles-dir . --target prod --fail-fast --debug 2>&1 | tee logs/dbt_run.log
+RUN_EXIT_CODE=${PIPESTATUS[0]}
+
+if [ $RUN_EXIT_CODE -ne 0 ]; then
+    echo "❌ dbt run failed with exit code $RUN_EXIT_CODE. Printing logs:"
     cat logs/dbt_run.log
-    exit 1
+    exit $RUN_EXIT_CODE
 fi
 
 echo "--- Running dbt tests... ---"
-if ! dbt test --profiles-dir . --target prod --debug 2>&1 | tee logs/dbt_test.log; then
-    echo "❌ dbt test failed. Printing full logs for debugging:"
+dbt test --profiles-dir . --target prod --debug 2>&1 | tee logs/dbt_test.log
+TEST_EXIT_CODE=${PIPESTATUS[0]}
+
+if [ $TEST_EXIT_CODE -ne 0 ]; then
+    echo "❌ dbt test failed with exit code $TEST_EXIT_CODE. Printing logs:"
     cat logs/dbt_test.log
-    exit 1
+    exit $TEST_EXIT_CODE
 fi
 
 echo "--- dbt run and test completed successfully! ---"

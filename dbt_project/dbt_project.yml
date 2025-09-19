@@ -1,3 +1,5 @@
+# dbt_project.yml
+
 name: 'mi_pipeline_bancario'
 version: '1.0.0'
 config-version: 2
@@ -16,7 +18,15 @@ clean-targets:
   - "target"
   - "dbt_packages"
 
+# Configuración por carpeta
 models:
   mi_pipeline_bancario:
-    staging:
+    01_bronze:
       +materialized: incremental
+      +on_schema_change: sync_all_columns
+    02_silver:
+      +materialized: incremental
+      +unique_key: transaccion_id
+    03_gold:
+      +materialized: table
+      +tags: ['gold', 'final']

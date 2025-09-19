@@ -5,7 +5,7 @@ mi_pipeline_bancario:
       type: bigquery
       method: oauth
       project: dwhfinancial
-      dataset: bancos_bronze
+      dataset: bronze_raw
       threads: 4
 
     dev:

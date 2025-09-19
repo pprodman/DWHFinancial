@@ -1,24 +1,23 @@
 {{
   config(
-    materialized = 'table',  -- O 'incremental' si prefieres (ver nota abajo)
+    materialized = 'table',
     partition_by = {'field': 'fecha', 'data_type': 'date'},
-    cluster_by = ['entidad', 'categoria_movimiento', 'tipo_movimiento']
+    cluster_by = ['entidad', 'categoria']
   )
 }}
 
 WITH bankinter AS (
-    SELECT * FROM {{ ref('bankinter') }}
+    SELECT * FROM {{ ref('slv_bankinter__global') }}
 ),
 
---sabadell AS (
---    SELECT * FROM {{ ref('slv_sabadell__global') }}
---),
+sabadell AS (
+    SELECT * FROM {{ ref('slv_sabadell__global') }}
+),
 
-
-bancos AS (
+todos AS (
     SELECT * FROM bankinter
-    --UNION ALL
-    --SELECT * FROM sabadell
+    UNION ALL
+    SELECT * FROM sabadell
 )
 
 SELECT
@@ -26,17 +25,11 @@ SELECT
     fecha,
     concepto,
     importe,
-    entidad,           -- Banco (Bankinter, Sabadell, etc.)
-    origen,            -- Fuente original (cuenta, tarjeta)
-    tipo_movimiento,   -- Ingreso/Gasto (calculado en Silver)
-
-    -- ✅ Campo nuevo: Categoría inteligente
+    entidad,
+    origen,
+    tipo_movimiento,
     {{ categorizar_movimiento('concepto', 'importe') }} AS categoria,
-
-    -- ✅ Campos de análisis
     ABS(importe) AS importe_absoluto,
     EXTRACT(YEAR FROM fecha) AS anio,
-    EXTRACT(MONTH FROM fecha) AS mes,
-    FORMAT_DATE('%Y-%m', fecha) AS periodo
-
-FROM bancos
+    EXTRACT(MONTH FROM fecha) AS mes
+FROM todos

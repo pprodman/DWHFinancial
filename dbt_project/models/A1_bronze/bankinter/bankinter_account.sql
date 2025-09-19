@@ -13,7 +13,7 @@ SELECT
     importe,
     entidad,
     origen
-FROM {{ source('raw', 'bankinter_account') }}
+FROM {{ source('bronze_raw', 'bankinter_account') }}
 
 {% if is_incremental() %}
   WHERE transaccion_id NOT IN (

@@ -8,4 +8,6 @@ sources:
     database: dwhfinancial
     tables:
       - name: bankinter_account
+        description: "Tabla cruda con los movimientos de la cuenta Bankinter."
       - name: bankinter_card
+        description: "Tabla cruda con los movimientos de la tarjeta Bankinter."

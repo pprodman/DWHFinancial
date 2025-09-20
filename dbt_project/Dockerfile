@@ -1,17 +1,43 @@
-# Usa una imagen base de Python
+# ---- Dockerfile Optimizado ----
+
+# --- ETAPA 1: "Builder" ---
+# Usamos una imagen completa para compilar las dependencias de forma segura
+FROM python:3.9-slim as builder
+
+WORKDIR /app
+
+# 1. Copiar SOLO el archivo de requerimientos
+COPY requirements.txt .
+
+# 2. Instalar dependencias en un entorno virtual aislado (venv)
+#    --no-cache-dir reduce el tamaño de la capa
+#    El venv se crea en /opt/venv para que sea fácil de encontrar y copiar
+RUN python -m venv /opt/venv && \
+    /opt/venv/bin/pip install --no-cache-dir -r requirements.txt
+
+# --- ETAPA 2: "Runtime" ---
+# Empezamos de nuevo desde una imagen base limpia y ligera
 FROM python:3.9-slim
 
-# Establece el directorio de trabajo
-WORKDIR /usr/app/dbt
+# 3. Crear un usuario no-root para mejorar la seguridad
+RUN useradd --create-home --shell /bin/bash appuser
+WORKDIR /home/appuser/dbt
 
-# Instala dbt y el adaptador de BigQuery
-RUN pip install dbt-bigquery
+# 4. Copiar el entorno virtual con las dependencias ya instaladas desde la etapa "builder"
+#    Esto es clave: no traemos herramientas de compilación ni caché, solo el resultado final.
+COPY --from=builder /opt/venv /opt/venv
 
-# Copia tu proyecto dbt al contenedor
-COPY . .
+# 5. Copiar todo el código del proyecto dbt, estableciendo el propietario al nuevo usuario
+COPY --chown=appuser:appuser . .
 
-# Asegurarse de que el script tiene permisos de ejecución
-RUN chmod +x run_dbt.sh
+# 6. Cambiar al usuario no-root
+USER appuser
 
-# Define el script de shell como el punto de entrada
+# 7. Añadir el venv al PATH del sistema para que los comandos `dbt` funcionen directamente
+ENV PATH="/opt/venv/bin:$PATH"
+
+# 8. El script ya tiene permisos, pero si no, este es el lugar para asegurarlo
+# RUN chmod +x run_dbt.sh
+
+# 9. Definir el punto de entrada
 ENTRYPOINT ["./run_dbt.sh"]

@@ -1,8 +1,6 @@
 {{
   config(
-    materialized = 'table',
-    partition_by = {'field': 'fecha', 'data_type': 'date'},
-    cluster_by = ['entidad', 'categoria']
+    materialized = 'table'
   )
 }}
 

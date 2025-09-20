@@ -7,12 +7,12 @@
 }}
 
 WITH bankinter AS (
-    SELECT * FROM {{ ref('slv_bankinter__global') }}
+    SELECT * FROM {{ ref('bankinter') }}
 ),
 
-sabadell AS (
-    SELECT * FROM {{ ref('slv_sabadell__global') }}
-),
+--sabadell AS (
+--    SELECT * FROM {{ ref('slv_sabadell__global') }}
+--),
 
 todos AS (
     SELECT * FROM bankinter

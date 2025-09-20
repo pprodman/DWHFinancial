@@ -1,9 +1,7 @@
-# ---- cloudbuild.yaml Optimizado ----
+# ---- cloudbuild.yaml CORREGIDO Y FINAL ----
 
 steps:
-  # --- PASO 1: Construir la imagen de Docker ---
-  # Usamos --cache-from para acelerar drásticamente los builds futuros.
-  # El 'id' nos permite referenciar este paso más adelante.
+  # --- PASO 0: Construir la imagen de Docker ---
   - name: 'gcr.io/cloud-builders/docker'
     id: 'build-dbt-image'
     args:
@@ -11,25 +9,27 @@ steps:
       - '--tag=$_IMAGE_TAG'
       - '--cache-from=$_LOCATION-docker.pkg.dev/$PROJECT_ID/$_REPOSITORY/dbt-transform-job:latest'
       - '.'
-    # Aumentar el timeout por si la descarga del caché es lenta la primera vez
     timeout: 1200s
 
-  # --- PASO 2: Escanear la imagen en busca de vulnerabilidades ---
-  # Este paso de seguridad se ejecuta DESPUÉS de construir la imagen.
-  # Falla el build si se encuentran vulnerabilidades de severidad ALTA o CRÍTICA.
-  - name: 'gcr.io/cloud-builders/gcloud' 
-    id: 'scan-for-vulnerabilities'
+  # --- PASO 1 (NUEVO): Subir (push) la imagen a Artifact Registry ---
+  # Este paso asegura que la imagen esté disponible para los siguientes pasos.
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'push-dbt-image'
     waitFor: ['build-dbt-image']
+    args: ['push', '$_IMAGE_TAG']
+
+  # --- PASO 2: Escanear la imagen en busca de vulnerabilidades ---
+  # Ahora espera a que la imagen sea subida y el comando está corregido.
+  - name: 'gcr.io/cloud-builders/gcloud'
+    id: 'scan-for-vulnerabilities'
+    waitFor: ['push-dbt-image']
     entrypoint: 'sh'
     args:
       - '-c'
       - |
-        gcloud artifacts docker images scan $_IMAGE_TAG \
-          --format=json \
-          --sort-by=SEVERITY \
-          --limit=1 > scan_results.json
+        # Comando corregido (sin --sort-by y --limit)
+        gcloud artifacts docker images scan $_IMAGE_TAG --format=json > scan_results.json
 
-        # Comprobar si hay vulnerabilidades de alta severidad o críticas
         if grep -q -E "CRITICAL|HIGH" scan_results.json; then
           echo "❌ Vulnerabilidades críticas o altas encontradas. Revisa el reporte:"
           cat scan_results.json
@@ -38,8 +38,8 @@ steps:
           echo "✅ No se encontraron vulnerabilidades críticas o altas."
         fi
 
-  # --- PASO 3: (OPCIONAL PERO RECOMENDADO) Desplegar el Job en Cloud Run ---
-  # Si el build y el escaneo son exitosos, actualiza automáticamente el Job.
+  # --- PASO 3: Desplegar el Job en Cloud Run ---
+  # Ahora este paso encontrará la imagen porque ya fue subida en el Paso 1.
   - name: 'gcr.io/cloud-builders/gcloud'
     id: 'deploy-to-cloud-run'
     waitFor: ['scan-for-vulnerabilities']
@@ -47,14 +47,13 @@ steps:
       - 'run'
       - 'jobs'
       - 'update'
-      - '$_JOB_NAME' # Nombre de tu Job, ej: "dbt-transform-job"
+      - '$_JOB_NAME'
       - '--image=$_IMAGE_TAG'
-      - '--region=$_REGION' # ej: "us-central1"
-      - '--quiet' # No pedir confirmación
+      - '--region=$_REGION'
+      - '--quiet'
 
 # --- IMÁGENES A SUBIR ---
-# Subimos la imagen con su tag único (ej, commit SHA) y con el tag 'latest'
-# El tag 'latest' se usará como caché para el próximo build.
+# Todavía es útil para empujar la etiqueta 'latest' para el caché del próximo build.
 images:
   - '$_IMAGE_TAG'
   - '$_LOCATION-docker.pkg.dev/$PROJECT_ID/$_REPOSITORY/dbt-transform-job:latest'
@@ -64,5 +63,4 @@ options:
   logging: CLOUD_LOGGING_ONLY
 
 # --- CUENTA DE SERVICIO ---
-# Asegúrate de que esta SA tenga los permisos necesarios.
 serviceAccount: projects/$PROJECT_ID/serviceAccounts/cloud-run-build-sa@dwhfinancial.iam.gserviceaccount.com

@@ -4,6 +4,7 @@ import json
 import logging
 import hashlib
 import pandas as pd
+import functions_framework
 
 # Librerías de Google Cloud
 from google.cloud import storage, secretmanager

@@ -1,20 +1,17 @@
 # .github/workflows/deploy-ingestion-function.yml
 
-name: 'CI/CD: Ingestion Cloud Function (Drive to GCS)'
+name: 'Deploy: Ingestion Cloud Function'
 
 on:
+  # Se activa automáticamente al hacer push a la rama 'main' si hay cambios en la carpeta de la función
   push:
     branches: [ 'main' ]
     paths:
       - 'ingestion_function/**'
       - '.github/workflows/deploy-ingestion-function.yml'
   
+  # Permite la ejecución manual desde la pestaña "Actions" de GitHub
   workflow_dispatch:
-    inputs:
-      branch:
-        description: 'La rama que se va a desplegar (dejar como "main" para producción)'
-        required: true
-        default: 'main'
 
 env:
   PROJECT_ID: 'dwhfinancial'
@@ -25,18 +22,16 @@ env:
   DEPLOYER_SERVICE_ACCOUNT: 'github-actions-deployer@dwhfinancial.iam.gserviceaccount.com'
 
 jobs:
-  deploy-ingestion-function:
-    name: Deploy Ingestion Function
+  deploy:
+    name: Deploy to Cloud Functions
     runs-on: ubuntu-latest
     permissions:
       contents: 'read'
       id-token: 'write'
 
     steps:
-      - name: Checkout code from specified branch
+      - name: Checkout repository code
         uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.inputs.branch || github.ref }}
 
       - name: Authenticate to Google Cloud
         id: auth

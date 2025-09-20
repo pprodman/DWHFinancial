@@ -1,0 +1,8 @@
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', '$_IMAGE_TAG', '.']
+images:
+  - '$_IMAGE_TAG'
+options:
+  logging: CLOUD_LOGGING_ONLY
+serviceAccount: projects/$PROJECT_ID/serviceAccounts/cloud-run-build-sa@dwhfinancial.iam.gserviceaccount.com

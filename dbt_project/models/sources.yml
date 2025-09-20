@@ -1,18 +1,11 @@
+# models/sources.yml
+
 version: 2
 
 sources:
-  - name: gcs_raw_source
-    database: tu-proyecto-gcp # Reemplazar con tu ID de proyecto
-    schema: bancos_bronze 
-    loader: cloud_storage
+  - name: bronze_raw
+    schema: bronze_raw
+    database: dwhfinancial
     tables:
-      - name: movimientos_raw_csv
-        external:
-          location: "gs://{{ env_var('GCS_BUCKET_NAME') }}/*/*/*.csv"
-          options:
-            format: CSV
-            skip_leading_rows: 1 # Nuestros CSV generados tienen cabecera
-            allow_quoted_newlines: true
-          hive_partitioning_options:
-            mode: CUSTOM
-            source_uri_prefix: "gs://{{ env_var('GCS_BUCKET_NAME') }}/{banco:STRING}/{tipo_cuenta:STRING}"
+      - name: bankinter_account
+      - name: bankinter_card

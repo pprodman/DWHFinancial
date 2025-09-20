@@ -3,66 +3,50 @@
 name: 'Deploy: dbt Transformation Job'
 
 on:
-  # Se activa automáticamente al hacer push a la rama 'main' si hay cambios en la carpeta de dbt
   push:
     branches: [ 'main' ]
     paths:
       - 'dbt_project/**'
       - '.github/workflows/deploy-dbt-job.yml'
-  
-  # Permite la ejecución manual desde la pestaña "Actions" de GitHub
   workflow_dispatch:
 
 env:
   PROJECT_ID: 'dwhfinancial'
   REGION: 'us-central1'
-  GCS_BUCKET: 'dwhfinancial-data-feed'
+  REPOSITORY: 'cloud-run-source-deploy' # Nombre de tu repo en Artifact Registry
   JOB_NAME: 'dbt-transform-job'
-  JOB_SERVICE_ACCOUNT: 'drive-reader-sa@dwhfinancial.iam.gserviceaccount.com'
   DEPLOYER_SERVICE_ACCOUNT: 'github-actions-deployer@dwhfinancial.iam.gserviceaccount.com'
 
 jobs:
-  deploy:
-    name: Deploy to Cloud Run Jobs
+  build-and-deploy:
+    name: 'Build and Deploy with Cloud Build'
     runs-on: ubuntu-latest
     permissions:
       contents: 'read'
       id-token: 'write'
 
     steps:
-      - name: Checkout repository code
+      - name: 'Checkout repository code'
         uses: actions/checkout@v4
-        
-      - name: Authenticate to Google Cloud
+
+      - name: 'Authenticate to Google Cloud'
         id: auth
         uses: 'google-github-actions/auth@v2'
         with:
           workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ env.DEPLOYER_SERVICE_ACCOUNT }}
 
-      - name: Set up gcloud CLI
+      - name: 'Set up gcloud CLI'
         uses: 'google-github-actions/setup-gcloud@v2'
 
-      - name: Build Docker Image with Cloud Build
+      - name: 'Submit job to Cloud Build'
         run: |
           gcloud builds submit ./dbt_project \
             --config=./dbt_project/cloudbuild.yaml \
-            --substitutions=_IMAGE_TAG=us-central1-docker.pkg.dev/${{ env.PROJECT_ID }}/cloud-run-source-deploy/dbt-job:latest \
-            --project=${{ env.PROJECT_ID }}
-
-      - name: Deploy dbt Job to Cloud Run
-        run: |
-          gcloud run jobs deploy ${{ env.JOB_NAME }} \
             --project=${{ env.PROJECT_ID }} \
-            --region=${{ env.REGION }} \
-            --image=us-central1-docker.pkg.dev/${{ env.PROJECT_ID }}/cloud-run-source-deploy/dbt-job:latest \
-            --task-timeout=15m \
-            --set-env-vars="GCS_BUCKET_NAME=${{ env.GCS_BUCKET }}" \
-            --service-account=${{ env.JOB_SERVICE_ACCOUNT }}
-
-      - name: Execute dbt Job
-        run: |
-          gcloud run jobs execute ${{ env.JOB_NAME }} \
-            --project=${{ env.PROJECT_ID }} \
-            --region=${{ env.REGION }} \
-            --wait
+            --substitutions=\
+              _JOB_NAME=${{ env.JOB_NAME }},\
+              _REGION=${{ env.REGION }},\
+              _LOCATION=${{ env.REGION }},\
+              _REPOSITORY=${{ env.REPOSITORY }},\
+              _IMAGE_TAG=${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/dbt-transform-job:${{ github.sha }}

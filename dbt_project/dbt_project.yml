@@ -21,12 +21,12 @@ clean-targets:
 # Configuración por carpeta
 models:
   mi_pipeline_bancario:
-    01_bronze:
+    A1_bronze:
       +materialized: incremental
       +on_schema_change: sync_all_columns
-    02_silver:
+    A2_silver:
       +materialized: incremental
       +unique_key: transaccion_id
-    03_gold:
+    A3_gold:
       +materialized: table
       +tags: ['gold', 'final']

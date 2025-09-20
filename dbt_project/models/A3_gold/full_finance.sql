@@ -16,8 +16,8 @@ WITH bankinter AS (
 
 todos AS (
     SELECT * FROM bankinter
-    UNION ALL
-    SELECT * FROM sabadell
+--    UNION ALL
+--    SELECT * FROM sabadell
 )
 
 SELECT

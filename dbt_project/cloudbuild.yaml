@@ -1,27 +1,41 @@
-# ---- cloudbuild.yaml FINAL Y SIMPLIFICADO ----
+# ---- cloudbuild.yaml VERSIÓN FINAL Y CORRECTA ----
 
 steps:
   # --- PASO 0: Construir la imagen con AMBOS tags (SHA y latest) ---
+  # Esto es para que el caché funcione y para que la sección 'images:' no falle.
   - name: 'gcr.io/cloud-builders/docker'
     id: 'build-dbt-image'
     args:
       - 'build'
-      # Crea el tag único con el SHA del commit
       - '--tag=$_IMAGE_TAG'
-      # Crea también el tag 'latest' para el caché
       - '--tag=$_LOCATION-docker.pkg.dev/$PROJECT_ID/$_REPOSITORY/dbt-transform-job:latest'
       - '--cache-from=$_LOCATION-docker.pkg.dev/$PROJECT_ID/$_REPOSITORY/dbt-transform-job:latest'
       - '.'
     timeout: 1200s
 
-  # --- PASO 1: Escanear la imagen (ahora que la API estará habilitada) ---
+  # --- PASO 1 (CRUCIAL): Subir (push) la imagen con su tag único ---
+  # Este paso hace que la imagen esté disponible INMEDIATAMENTE en el registro.
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'push-dbt-image'
+    waitFor: ['build-dbt-image']
+    args: ['push', '$_IMAGE_TAG']
+
+  # --- PASO 2: Escanear la imagen ---
+  # Ahora este paso funcionará porque la imagen ya existe en Artifact Registry.
   - name: 'gcr.io/cloud-builders/gcloud'
     id: 'scan-for-vulnerabilities'
-    waitFor: ['build-dbt-image']
+    waitFor: ['push-dbt-image']
     entrypoint: 'sh'
     args:
       - '-c'
       - |
+        # Habilitar la API si es necesario y reintentar
+        if ! gcloud services list --enabled --filter="ondemandscanning.googleapis.com" --format="value(config.name)" | grep -q "."; then
+          echo "Habilitando On-Demand Scanning API..."
+          gcloud services enable ondemandscanning.googleapis.com
+          sleep 15 # Dar tiempo para que la API se propague
+        fi
+        
         gcloud artifacts docker images scan $_IMAGE_TAG --format=json > scan_results.json
         if grep -q -E "CRITICAL|HIGH" scan_results.json; then
           echo "❌ Vulnerabilidades críticas o altas encontradas."
@@ -31,8 +45,8 @@ steps:
           echo "✅ No se encontraron vulnerabilidades críticas o altas."
         fi
 
-  # --- PASO 2: Desplegar el Job en Cloud Run ---
-  # Este paso YA funciona, pero ahora lo hará después de un escaneo correcto.
+  # --- PASO 3: Desplegar el Job en Cloud Run ---
+  # Ahora este paso también encontrará la imagen sin problemas.
   - name: 'gcr.io/cloud-builders/gcloud'
     id: 'deploy-to-cloud-run'
     waitFor: ['scan-for-vulnerabilities']
@@ -46,14 +60,13 @@ steps:
       - '--quiet'
 
 # --- IMÁGENES A SUBIR ---
-# Ahora Cloud Build encontrará AMBOS tags localmente y los subirá.
+# Esta sección ahora se encarga de subir la etiqueta 'latest' para el caché del próximo build.
+# El tag único ya fue subido en el Paso 1.
 images:
   - '$_IMAGE_TAG'
   - '$_LOCATION-docker.pkg.dev/$PROJECT_ID/$_REPOSITORY/dbt-transform-job:latest'
 
-# --- OPCIONES ---
 options:
   logging: CLOUD_LOGGING_ONLY
 
-# --- CUENTA DE SERVICIO ---
 serviceAccount: projects/$PROJECT_ID/serviceAccounts/cloud-run-build-sa@dwhfinancial.iam.gserviceaccount.com

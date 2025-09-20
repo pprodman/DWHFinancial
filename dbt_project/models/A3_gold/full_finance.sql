@@ -11,7 +11,7 @@ WITH bankinter AS (
 ),
 
 --sabadell AS (
---    SELECT * FROM {{ ref('slv_sabadell__global') }}
+--    SELECT * FROM {{ ref('slv_sabadell__global') }} 
 --),
 
 todos AS (

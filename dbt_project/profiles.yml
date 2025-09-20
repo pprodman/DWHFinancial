@@ -7,6 +7,7 @@ mi_pipeline_bancario:
       project: dwhfinancial
       dataset: bronze_raw
       threads: 4
+      retries: 1
 
     dev:
       type: bigquery
@@ -14,4 +15,5 @@ mi_pipeline_bancario:
       project: dwhfinancial
       dataset: dbt_dev
       threads: 4
+      retries: 1
       keyfile: /path/to/your/local/credentials.json

@@ -9,7 +9,7 @@
 }}
 
 WITH cuenta AS (
-    SELECT * FROM {{ ref('bankinter_aacount') }}
+    SELECT * FROM {{ ref('bankinter_account') }}
     WHERE concepto NOT LIKE '%RECIBO PLATINUM%'
 ),
 

@@ -23,6 +23,9 @@ WORKDIR /home/appuser/dbt
 # 4. Copiar el entorno virtual...
 COPY --from=builder /opt/venv /opt/venv
 COPY --chown=appuser:appuser . .
+# --- AÑADIR O DESCOMENTAR ESTA LÍNEA ---
+# Asegurarse de que el script tiene permisos de ejecución
+RUN chmod +x run_dbt.sh
 USER appuser
 ENV PATH="/opt/venv/bin:$PATH"
 ENTRYPOINT ["./run_dbt.sh"]

@@ -19,4 +19,4 @@ models:
       - name: origen
         description: "Origen de la transacción."
       - name: tipo_movimiento
-        description: "Tipo de movimiento, por ejemplo 'ingreso' o 'gasto'.
+        description: "Tipo de movimiento, por ejemplo 'ingreso' o 'gasto'."

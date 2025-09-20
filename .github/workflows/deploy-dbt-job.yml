@@ -44,9 +44,4 @@ jobs:
           gcloud builds submit ./dbt_project \
             --config=./dbt_project/cloudbuild.yaml \
             --project=${{ env.PROJECT_ID }} \
-            --substitutions=\
-              _JOB_NAME=${{ env.JOB_NAME }},\
-              _REGION=${{ env.REGION }},\
-              _LOCATION=${{ env.REGION }},\
-              _REPOSITORY=${{ env.REPOSITORY }},\
-              _IMAGE_TAG=${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/dbt-transform-job:${{ github.sha }}
+            --substitutions="_JOB_NAME=${{ env.JOB_NAME }},_REGION=${{ env.REGION }},_LOCATION=${{ env.REGION }},_REPOSITORY=${{ env.REPOSITORY }},_IMAGE_TAG=${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/dbt-transform-job:${{ github.sha }}"

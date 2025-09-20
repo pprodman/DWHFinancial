@@ -5,5 +5,6 @@ mi_pipeline_bancario:
       type: bigquery
       method: oauth  # o service-account en producción
       project: dwhfinancial
+      schema: bronze_standard
       threads: 4
       retries: 1

@@ -90,7 +90,7 @@ jobs:
             --project=${{ env.PROJECT_ID }} \
             --region=${{ env.REGION }} \
             --format="value(metadata.name)" \
-            --wait) # --wait simplifica el script, GitHub Actions esperará aquí
+            --wait) 
 
           echo "✅ Execution finished with name: $EXECUTION_NAME"
           

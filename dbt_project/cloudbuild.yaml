@@ -17,7 +17,7 @@ steps:
   # --- PASO 2: Escanear la imagen en busca de vulnerabilidades ---
   # Este paso de seguridad se ejecuta DESPUÉS de construir la imagen.
   # Falla el build si se encuentran vulnerabilidades de severidad ALTA o CRÍTICA.
-  - name: 'gcr.io/google.com/cloudsdktool/gcloud'
+  - name: 'gcr.io/cloud-builders/gcloud' 
     id: 'scan-for-vulnerabilities'
     waitFor: ['build-dbt-image']
     entrypoint: 'sh'
@@ -40,7 +40,7 @@ steps:
 
   # --- PASO 3: (OPCIONAL PERO RECOMENDADO) Desplegar el Job en Cloud Run ---
   # Si el build y el escaneo son exitosos, actualiza automáticamente el Job.
-  - name: 'gcr.io/google.com/cloudsdktool/gcloud'
+  - name: 'gcr.io/cloud-builders/gcloud'
     id: 'deploy-to-cloud-run'
     waitFor: ['scan-for-vulnerabilities']
     args:

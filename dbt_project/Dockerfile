@@ -22,8 +22,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends bash && \
     rm -rf /var/lib/apt/lists/*
 
 # Crear el directorio de trabajo y el usuario no-root
+RUN useradd --create-home --shell /bin/bash appuser
 WORKDIR /home/appuser/dbt
-RUN useradd --create-home --shell /bin/bash --workdir /home/appuser/dbt appuser
 
 # Copiar el entorno virtual con las dependencias ya instaladas
 COPY --from=builder /opt/venv /opt/venv

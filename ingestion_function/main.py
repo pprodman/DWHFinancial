@@ -1,8 +1,11 @@
+# ingestion_function/main.py
+
 import os
 import io
 import json
 import logging
 import hashlib
+import base64
 import pandas as pd
 import functions_framework
 
@@ -11,12 +14,11 @@ from google.cloud import storage, secretmanager
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from google.oauth2 import service_account
+from cloudevents.http import CloudEvent
 
 # --- Configuración y Constantes ---
-# Configura un logging más informativo.
 logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
 
-# Cargar configuración desde variables de entorno para mayor flexibilidad.
 PROJECT_ID = os.environ.get("GCP_PROJECT")
 GCS_BUCKET_NAME = os.environ.get('GCS_BUCKET_NAME')
 DRIVE_PARENT_FOLDER_ID = os.environ.get('DRIVE_PARENT_FOLDER_ID')
@@ -25,9 +27,9 @@ DRIVE_SECRET_NAME = os.environ.get('DRIVE_SECRET_NAME')
 CONFIG_FILE = 'bank_configs.json'
 PENDING_FOLDER_NAME = 'pending'
 PROCESSED_FOLDER_NAME = 'processed'
-IN_PROGRESS_FOLDER_NAME = 'in_progress' # Carpeta para garantizar idempotencia.
+IN_PROGRESS_FOLDER_NAME = 'in_progress'
 
-# --- Clientes de GCP (se inicializan una vez para reutilizar conexiones) ---
+# --- Clientes de GCP (se inicializan una vez) ---
 storage_client = storage.Client()
 secret_client = secretmanager.SecretManagerServiceClient()
 
@@ -46,22 +48,16 @@ def get_drive_credentials() -> service_account.Credentials:
         raise
 
 def _generate_transaction_id(row: pd.Series) -> str:
-    """
-    Genera un ID único y determinista para una transacción.
-    Normaliza los datos antes de crear el hash para asegurar consistencia.
-    """
-    # Normalizar los datos: quitar espacios, formato de fecha estándar, importe con 2 decimales.
+    """Genera un ID único y determinista para una transacción."""
     fecha_str = str(row['fecha'])
-    concepto_str = str(row['concepto']).strip().lower() # Añadir .lower() para más consistencia
+    concepto_str = str(row['concepto']).strip().lower()
     importe_str = f"{float(row['importe']):.2f}"
     
     unique_string = f"{fecha_str}-{concepto_str}-{importe_str}"
     return hashlib.sha256(unique_string.encode('utf-8')).hexdigest()
 
 def _process_and_enrich_dataframe(drive_service, file_id: str, config: dict, bank: str, account_type: str) -> pd.DataFrame:
-    """
-    Lee, limpia, enriquece y estandariza los datos de un archivo XLSX a un DataFrame.
-    """
+    """Lee, limpia, enriquece y estandariza los datos de un archivo XLSX."""
     try:
         request = drive_service.files().get_media(fileId=file_id)
         file_bytes = io.BytesIO(request.execute())
@@ -75,34 +71,27 @@ def _process_and_enrich_dataframe(drive_service, file_id: str, config: dict, ban
         )
     except HttpError as e:
         logging.error(f"Error de la API de Drive al descargar el archivo ID {file_id}: {e}")
-        return pd.DataFrame() # Devuelve un DataFrame vacío en caso de error
+        return pd.DataFrame()
 
-    # Renombrar columnas de forma más segura
     df.rename(columns=config['column_mapping'], inplace=True)
     required_cols = list(config['column_mapping'].values())
     
-    # Verificar si todas las columnas requeridas existen después de renombrar
     if not all(col in df.columns for col in required_cols):
         logging.error(f"Faltan columnas requeridas en el archivo. Se esperaban: {required_cols}, se encontraron: {list(df.columns)}")
         return pd.DataFrame()
 
-    df = df[required_cols] # Seleccionar solo las columnas necesarias
-
-    # Limpieza y estandarización
+    df = df[required_cols]
     df['fecha'] = pd.to_datetime(df['fecha'], format=config.get('date_format'), errors='coerce')
     df['importe'] = pd.to_numeric(df['importe'].astype(str).str.replace(',', '.'), errors='coerce')
     
-    # Elimina filas con valores nulos en columnas críticas
     df.dropna(subset=['fecha', 'concepto', 'importe'], inplace=True)
     if df.empty:
         return df
 
-    # Enriquecimiento y generación de ID
     df['banco'] = bank
     df['tipo_cuenta'] = account_type
     df['transaction_id'] = df.apply(_generate_transaction_id, axis=1)
 
-    # Orden final de las columnas
     final_columns = ['transaction_id', 'fecha', 'concepto', 'importe', 'banco', 'tipo_cuenta']
     return df[final_columns]
 
@@ -144,7 +133,6 @@ def _process_account_folder(drive_service, account_folder: dict, bank_name: str,
     account_folder_id = account_folder['id']
     logging.info(f"--- Procesando carpeta de cuenta: {bank_name}/{account_type_name} ---")
 
-    # Obtener IDs de carpetas (crear 'in_progress' si no existe)
     pending_id = _get_folder_id(drive_service, account_folder_id, PENDING_FOLDER_NAME)
     processed_id = _get_folder_id(drive_service, account_folder_id, PROCESSED_FOLDER_NAME)
     in_progress_id = _get_folder_id(drive_service, account_folder_id, IN_PROGRESS_FOLDER_NAME, create_if_not_exists=True)
@@ -153,7 +141,6 @@ def _process_account_folder(drive_service, account_folder: dict, bank_name: str,
         logging.warning(f"Falta la estructura de carpetas 'pending' o 'processed' en {bank_name}/{account_type_name}. Se omite.")
         return
 
-    # Buscar archivos en la carpeta 'pending'
     q_files = f"'{pending_id}' in parents and trashed=false"
     files = drive_service.files().list(q=q_files, fields="files(id, name)").execute().get('files', [])
 
@@ -167,16 +154,11 @@ def _process_account_folder(drive_service, account_folder: dict, bank_name: str,
         logging.info(f"Procesando archivo: {file_name} (ID: {file_id})")
 
         try:
-            # LÓGICA DE IDEMPOTENCIA: Mover a 'in_progress' ANTES de procesar.
             _move_file_in_drive(drive_service, file_id, pending_id, in_progress_id)
-            
             clean_df = _process_and_enrich_dataframe(drive_service, file_id, config, bank_name, account_type_name)
             
             if not clean_df.empty:
-                # Convertir el DataFrame a formato JSON Lines
                 jsonl_data = clean_df.to_json(orient='records', lines=True, date_format='iso')
-                
-                # Cambiar la extensión del archivo en GCS
                 gcs_path = f"{bank_name}/{account_type_name}/{os.path.splitext(file_name)[0]}.jsonl"
                 
                 blob = storage_client.bucket(GCS_BUCKET_NAME).blob(gcs_path)
@@ -185,26 +167,30 @@ def _process_account_folder(drive_service, account_folder: dict, bank_name: str,
             else:
                 logging.warning(f"El archivo {file_name} no contenía datos válidos tras la limpieza.")
 
-            # Mover a 'processed' solo si todo lo anterior tuvo éxito
             _move_file_in_drive(drive_service, file_id, in_progress_id, processed_id)
 
         except Exception as e:
             logging.error(f"Error CRÍTICO procesando el archivo {file_name}. Se quedará en 'in_progress' para revisión manual. Error: {e}")
-            # El archivo se queda en 'in_progress', evitando reintentos infinitos.
 
-@functions_framework.http
-def ingest_bank_statements(request):
-    """Punto de entrada de la Cloud Function que escanea Google Drive y procesa archivos."""
+# --- Punto de Entrada de la Cloud Function (Modificado para Pub/Sub) ---
+@functions_framework.cloud_event
+def ingest_bank_statements_pubsub(cloud_event: CloudEvent):
+    """
+    Punto de entrada de la Cloud Function, activado por un mensaje de Pub/Sub.
+    El contenido del mensaje no se usa, solo sirve como señal para iniciar el proceso.
+    """
+    logging.info(f"Función activada por el evento de Pub/Sub: {cloud_event['id']}")
+    
     logging.info("===== INICIANDO PIPELINE DE INGESTA DE EXTRACTOS BANCARIOS =====")
     try:
-        with open(CONFIG_FILE, 'r') as f:
+        with open('bank_configs.json', 'r') as f:
             bank_configs = json.load(f)
         
         credentials = get_drive_credentials()
         drive_service = build('drive', 'v3', credentials=credentials)
     except Exception as e:
         logging.critical(f"Error fatal en la inicialización (config o credenciales): {e}")
-        return "Error de configuración", 500
+        raise e
 
     q_banks = f"'{DRIVE_PARENT_FOLDER_ID}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false"
     banks = drive_service.files().list(q=q_banks, fields="files(id, name)").execute().get('files', [])

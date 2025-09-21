@@ -18,15 +18,20 @@ clean-targets:
   - "target"
   - "dbt_packages"
 
-# Configuración por carpeta
+# Configuración por carpeta — ¡Cada capa escribe en su propio dataset!
 models:
   mi_pipeline_bancario:
-    01_bronze:
+    A1_bronze:
       +materialized: incremental
       +on_schema_change: sync_all_columns
-    02_silver:
+      +schema: bronze_standard
+
+    A2_silver:
       +materialized: incremental
       +unique_key: transaccion_id
-    03_gold:
+      +schema: silver
+
+    A3_gold:
       +materialized: table
       +tags: ['gold', 'final']
+      +schema: gold

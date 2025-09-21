@@ -2,8 +2,6 @@
   config(
     materialized = 'incremental',
     unique_key = 'transaccion_id',
-    partition_by = {'field': 'fecha', 'data_type': 'date'},
-    cluster_by = ['entidad', 'origen', 'tipo_movimiento'],
     on_schema_change = 'sync_all_columns'
   )
 }}

@@ -1,42 +1,44 @@
-#!/bin/sh
+#!/bin/bash
 
-set -e
-set -x
+# Script de ejecución de dbt para producción
+# Falla inmediatamente si cualquier comando falla (set -e)
+# Falla si una variable no está definida (set -u)
+# Falla si un comando en una tubería falla (set -o pipefail)
+set -euo pipefail
 
-echo "=== DEBUG: Current directory ==="
-pwd
+# --- Directorios de Salida ---
+LOG_DIR="logs"
+DBT_TARGET_PATH="target"
+mkdir -p "$LOG_DIR" "$DBT_TARGET_PATH"
 
-echo "=== DEBUG: Files in directory ==="
-ls -la
+echo "--- Iniciando dbt pipeline... ---"
 
-echo "=== DEBUG: profiles.yml content ==="
-cat profiles.yml
-
-echo "=== DEBUG: dbt_project.yml content ==="
-cat dbt_project.yml
-
-echo "=== DEBUG: Creating logs directory ==="
-mkdir -p logs
-
-echo "--- Running dbt models... ---"
-# Ejecutar dbt y capturar TODO en un archivo
-dbt run --profiles-dir . --target prod --fail-fast --debug 2>&1 | tee logs/dbt_run.log
+# --- Paso 1: Ejecutar los modelos de dbt ---
+echo "--- Ejecutando dbt run... ---"
+# Se ejecuta dbt run, y toda la salida (stdout y stderr) se guarda en un log
+# y se muestra en la consola al mismo tiempo gracias a 'tee'.
+dbt run --profiles-dir . --target prod --fail-fast --target-path "$DBT_TARGET_PATH" 2>&1 | tee "$LOG_DIR/dbt_run.log"
+# Se captura el código de salida de 'dbt', no de 'tee'.
 RUN_EXIT_CODE=${PIPESTATUS[0]}
 
+# Se verifica si el comando dbt run falló.
 if [ $RUN_EXIT_CODE -ne 0 ]; then
-    echo "❌ dbt run failed with exit code $RUN_EXIT_CODE. Printing logs:"
-    cat logs/dbt_run.log
+    echo "❌ ERROR: dbt run falló con el código de salida $RUN_EXIT_CODE. Revisa los logs de arriba."
+    # El script termina aquí con el código de error.
     exit $RUN_EXIT_CODE
 fi
 
-echo "--- Running dbt tests... ---"
-dbt test --profiles-dir . --target prod --debug 2>&1 | tee logs/dbt_test.log
+echo "✅ dbt run completado con éxito."
+
+# --- Paso 2: Ejecutar los tests de calidad de datos ---
+echo "--- Ejecutando dbt test... ---"
+dbt test --profiles-dir . --target prod --target-path "$DBT_TARGET_PATH" 2>&1 | tee "$LOG_DIR/dbt_test.log"
 TEST_EXIT_CODE=${PIPESTATUS[0]}
 
 if [ $TEST_EXIT_CODE -ne 0 ]; then
-    echo "❌ dbt test failed with exit code $TEST_EXIT_CODE. Printing logs:"
-    cat logs/dbt_test.log
+    echo "❌ ERROR: dbt test falló con el código de salida $TEST_EXIT_CODE. Revisa los logs de arriba."
     exit $TEST_EXIT_CODE
 fi
 
-echo "--- dbt run and test completed successfully! ---"
+echo "✅ dbt test completado con éxito."
+echo "🎉 ¡Pipeline de dbt finalizado exitosamente! 🎉"

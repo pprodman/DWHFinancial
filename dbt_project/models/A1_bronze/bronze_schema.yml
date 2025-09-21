@@ -1,0 +1,36 @@
+# models/A1_bronze/bronze_schema.yml
+
+version: 2
+
+models:
+  - name: bankinter_account
+    description: "Tabla que unifica y estandariza las transacciones de cuentas bancarias de Bankinter."
+    columns:
+      - name: transaccion_id
+        description: "Identificador único para cada transacción, generado a partir de un hash de los campos originales."
+      - name: fecha
+        description: "Fecha en la que se realizó la transacción."
+      - name: concepto
+        description: "Descripción o concepto de la transacción."
+      - name: importe
+        description: "Monto de la transacción. Positivo para ingresos, negativo para gastos."
+      - name: entidad
+        description: "Nombre de la entidad bancaria."
+      - name: origen
+        description: "Origen de la transacción."
+
+  - name: bankinter_card
+    description: "Tabla que unifica y estandariza las transacciones de tarjetas de Bankinter."
+    columns:
+      - name: transaccion_id
+        description: "Identificador único para cada transacción de tarjeta."
+      - name: fecha
+        description: "Fecha de la transacción de tarjeta."
+      - name: concepto
+        description: "Descripción o concepto de la transacción."
+      - name: importe
+        description: "Monto de la transacción. Positivo para ingresos, negativo para gastos."
+      - name: entidad
+        description: "Nombre de la entidad bancaria."
+      - name: origen
+        description: "Origen de la transacción."

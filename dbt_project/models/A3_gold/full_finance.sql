@@ -1,8 +1,6 @@
 {{
   config(
-    materialized = 'table',
-    partition_by = {'field': 'fecha', 'data_type': 'date'},
-    cluster_by = ['entidad', 'categoria']
+    materialized = 'table'
   )
 }}
 
@@ -10,14 +8,8 @@ WITH bankinter AS (
     SELECT * FROM {{ ref('bankinter') }}
 ),
 
---sabadell AS (
---    SELECT * FROM {{ ref('slv_sabadell__global') }} 
---),
-
 todos AS (
     SELECT * FROM bankinter
---    UNION ALL
---    SELECT * FROM sabadell
 )
 
 SELECT

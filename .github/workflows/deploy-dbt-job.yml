@@ -1,68 +1,87 @@
-# .github/workflows/deploy-dbt-job.yml
+# .github/workflows/deploy-dbt-job.yml (VERSIÓN SIMPLIFICADA)
 
-name: 'Deploy: dbt Transformation Job'
+name: 'Deploy & Run: dbt Transformation Job'
 
 on:
-  # Se activa automáticamente al hacer push a la rama 'main' si hay cambios en la carpeta de dbt
   push:
     branches: [ 'main' ]
     paths:
       - 'dbt_project/**'
       - '.github/workflows/deploy-dbt-job.yml'
-  
-  # Permite la ejecución manual desde la pestaña "Actions" de GitHub
   workflow_dispatch:
 
 env:
   PROJECT_ID: 'dwhfinancial'
   REGION: 'us-central1'
-  GCS_BUCKET: 'dwhfinancial-data-feed'
+  REPOSITORY: 'cloud-run-source-deploy' # Repositorio en Artifact Registry
   JOB_NAME: 'dbt-transform-job'
-  JOB_SERVICE_ACCOUNT: 'drive-reader-sa@dwhfinancial.iam.gserviceaccount.com'
+  # La SA del Job que se ejecuta en Cloud Run
+  JOB_SERVICE_ACCOUNT: 'drive-reader-sa@dwhfinancial.iam.gserviceaccount.com' 
+  # La SA que usa GitHub para desplegar
   DEPLOYER_SERVICE_ACCOUNT: 'github-actions-deployer@dwhfinancial.iam.gserviceaccount.com'
 
 jobs:
-  deploy:
-    name: Deploy to Cloud Run Jobs
+  # Job 1: Construye y despliega la imagen en un solo paso
+  build-and-deploy:
+    name: 'Build and Deploy'
     runs-on: ubuntu-latest
     permissions:
       contents: 'read'
       id-token: 'write'
-
+    
     steps:
-      - name: Checkout repository code
+      - name: 'Checkout repository code'
         uses: actions/checkout@v4
-        
-      - name: Authenticate to Google Cloud
-        id: auth
+
+      - name: 'Authenticate to Google Cloud'
         uses: 'google-github-actions/auth@v2'
         with:
           workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ env.DEPLOYER_SERVICE_ACCOUNT }}
 
-      - name: Set up gcloud CLI
+      - name: 'Set up gcloud CLI'
         uses: 'google-github-actions/setup-gcloud@v2'
 
-      - name: Build Docker Image with Cloud Build
+      - name: 'Build and Deploy Job from Source'
+        id: deploy
         run: |
-          gcloud builds submit ./dbt_project \
-            --config=./dbt_project/cloudbuild.yaml \
-            --substitutions=_IMAGE_TAG=us-central1-docker.pkg.dev/${{ env.PROJECT_ID }}/cloud-run-source-deploy/dbt-job:latest \
-            --project=${{ env.PROJECT_ID }}
-
-      - name: Deploy dbt Job to Cloud Run
-        run: |
+          echo "🚀 Building from source and deploying job: ${{ env.JOB_NAME }}"
+          
+          # Este comando hace todo el trabajo pesado
           gcloud run jobs deploy ${{ env.JOB_NAME }} \
             --project=${{ env.PROJECT_ID }} \
             --region=${{ env.REGION }} \
-            --image=us-central1-docker.pkg.dev/${{ env.PROJECT_ID }}/cloud-run-source-deploy/dbt-job:latest \
-            --task-timeout=15m \
-            --set-env-vars="GCS_BUCKET_NAME=${{ env.GCS_BUCKET }}" \
-            --service-account=${{ env.JOB_SERVICE_ACCOUNT }}
+            --source=./dbt_project \
+            --service-account=${{ env.JOB_SERVICE_ACCOUNT }} \
+            --quiet
+            
+          echo "✅ Job deployed successfully!"
 
-      - name: Execute dbt Job
+  # Job 2 (Opcional): Ejecuta el Job después de un despliegue exitoso
+  execute-job:
+    name: 'Execute dbt Job'
+    runs-on: ubuntu-latest
+    needs: build-and-deploy
+    
+    if: |
+      always() && needs.build-and-deploy.result == 'success' &&
+      (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.event.inputs.run_job_after_deploy != 'false'))
+
+    permissions:
+      id-token: 'write'
+      contents: 'read'
+
+    steps:
+      - name: 'Authenticate to Google Cloud'
+        uses: 'google-github-actions/auth@v2'
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ env.DEPLOYER_SERVICE_ACCOUNT }}
+
+      - name: 'Set up gcloud CLI'
+        uses: 'google-github-actions/setup-gcloud@v2'
+        
+      - name: 'Execute Cloud Run Job and Wait for Result'
         run: |
-          gcloud run jobs execute ${{ env.JOB_NAME }} \
-            --project=${{ env.PROJECT_ID }} \
-            --region=${{ env.REGION }} \
-            --wait
+          echo "⚡ Starting execution for job: ${{ env.JOB_NAME }}"
+          gcloud run jobs execute ${{ env.JOB_NAME }} --wait --region=${{ env.REGION }}

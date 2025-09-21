@@ -1,0 +1,22 @@
+# models/A2_silver/silver_schema.yml
+
+version: 2
+
+models:
+  - name: bankinter
+    description: "Tabla que unifica y estandariza las transacciones de Bankinter."
+    columns:
+      - name: transaccion_id
+        description: "Identificador único para cada transacción, generado a partir de un hash de los campos originales."
+      - name: fecha
+        description: "Fecha en la que se realizó la transacción."
+      - name: concepto
+        description: "Descripción o concepto de la transacción."
+      - name: importe
+        description: "Monto de la transacción. Positivo para ingresos, negativo para gastos."
+      - name: entidad
+        description: "Nombre de la entidad bancaria."
+      - name: origen
+        description: "Origen de la transacción."
+      - name: tipo_movimiento
+        description: "Tipo de movimiento, por ejemplo 'ingreso' o 'gasto'."

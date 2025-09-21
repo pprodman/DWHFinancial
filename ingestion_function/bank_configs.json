@@ -1,0 +1,28 @@
+{
+  "Bankinter": {
+    "Cuenta": {
+      "sheet_name": 0,
+      "skip_rows": 5,
+      "skip_footer": 0,
+      "column_mapping": { "Fecha Oper.": "fecha", "Concepto": "concepto", "Importe": "importe" },
+      "date_format": "%d-%m-%Y"
+    },
+    "Tarjeta": {
+      "sheet_name": 0,
+      "skip_rows": 6,
+      "skip_footer": 1,
+      "column_mapping": { "Fecha Oper.": "fecha", "Concepto": "concepto", "Importe": "importe" },
+      "date_format": "%d-%m-%Y"
+    }
+  },
+
+  "Revolut": {
+    "Cuenta": {
+      "sheet_name": 0,
+      "skip_rows": 0,
+      "skip_footer": 0,
+      "column_mapping": { "Date": "fecha", "Transaction Description": "concepto", "Amount (EUR)": "importe" },
+      "date_format": "ISO8601"
+    }
+  }
+}

@@ -3,17 +3,8 @@ mi_pipeline_bancario:
   outputs:
     prod:
       type: bigquery
-      method: oauth
+      method: oauth  # o service-account en producción
       project: dwhfinancial
-      dataset: bronze_raw
+      schema: bronze_standard
       threads: 4
       retries: 1
-
-    dev:
-      type: bigquery
-      method: service-account
-      project: dwhfinancial
-      dataset: dbt_dev
-      threads: 4
-      retries: 1
-      keyfile: /path/to/your/local/credentials.json

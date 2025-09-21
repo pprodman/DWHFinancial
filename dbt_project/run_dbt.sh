@@ -1,53 +1,44 @@
 #!/bin/bash
 
-# Salir inmediatamente si un comando falla
-set -e
-# Imprimir cada comando antes de ejecutarlo (excelente para depuración)
-set -x
+# Script de ejecución de dbt para producción
+# Falla inmediatamente si cualquier comando falla (set -e)
+# Falla si una variable no está definida (set -u)
+# Falla si un comando en una tubería falla (set -o pipefail)
+set -euo pipefail
 
-# --- DIRECTORIOS DE SALIDA ---
-# Centralizar la ubicación de los logs y el target de dbt
-# Esto es útil si quieres subir estos artefactos a GCS después.
+# --- Directorios de Salida ---
 LOG_DIR="logs"
 DBT_TARGET_PATH="target"
 mkdir -p "$LOG_DIR" "$DBT_TARGET_PATH"
 
-# --- PASOS DE DEPURACIÓN (YA ESTÁN BIEN) ---
-echo "=== DEBUG: Current user and environment ==="
-whoami
-env | sort
+echo "--- Iniciando dbt pipeline... ---"
 
-echo "=== DEBUG: Current directory ==="
-pwd
+# --- Paso 1: Ejecutar los modelos de dbt ---
+echo "--- Ejecutando dbt run... ---"
+# Se ejecuta dbt run, y toda la salida (stdout y stderr) se guarda en un log
+# y se muestra en la consola al mismo tiempo gracias a 'tee'.
+dbt run --profiles-dir . --target prod --fail-fast --target-path "$DBT_TARGET_PATH" 2>&1 | tee "$LOG_DIR/dbt_run.log"
+# Se captura el código de salida de 'dbt', no de 'tee'.
+RUN_EXIT_CODE=${PIPESTATUS[0]}
 
-echo "=== DEBUG: Files in directory ==="
-ls -la
-
-# --- EJECUCIÓN DE DBT ---
-echo "--- Running dbt models... ---"
-# Redirigir la salida de depuración (stderr) al log junto con la salida estándar (stdout)
-dbt run --profiles-dir . --target prod --fail-fast --debug --target-path "$DBT_TARGET_PATH" 2>&1 | tee "$LOG_DIR/dbt_run.log"
-RUN_EXIT_CODE=${PIPESTATUS[0]} # Capturar el código de salida de dbt, no de tee
-
+# Se verifica si el comando dbt run falló.
 if [ $RUN_EXIT_CODE -ne 0 ]; then
-    echo "❌ dbt run failed with exit code $RUN_EXIT_CODE. Review logs above or in the log file."
-    # No es necesario imprimir el log de nuevo, ya que `tee` lo mostró en la salida estándar
+    echo "❌ ERROR: dbt run falló con el código de salida $RUN_EXIT_CODE. Revisa los logs de arriba."
+    # El script termina aquí con el código de error.
     exit $RUN_EXIT_CODE
 fi
 
-echo "--- Running dbt tests... ---"
-dbt test --profiles-dir . --target prod --debug --target-path "$DBT_TARGET_PATH" 2>&1 | tee "$LOG_DIR/dbt_test.log"
+echo "✅ dbt run completado con éxito."
+
+# --- Paso 2: Ejecutar los tests de calidad de datos ---
+echo "--- Ejecutando dbt test... ---"
+dbt test --profiles-dir . --target prod --target-path "$DBT_TARGET_PATH" 2>&1 | tee "$LOG_DIR/dbt_test.log"
 TEST_EXIT_CODE=${PIPESTATUS[0]}
 
 if [ $TEST_EXIT_CODE -ne 0 ]; then
-    echo "❌ dbt test failed with exit code $TEST_EXIT_CODE. Review logs above or in the log file."
+    echo "❌ ERROR: dbt test falló con el código de salida $TEST_EXIT_CODE. Revisa los logs de arriba."
     exit $TEST_EXIT_CODE
 fi
 
-# --- (Opcional) Subir artefactos a GCS ---
-# Si configuras una cuenta de servicio con permisos para GCS, puedes descomentar esto.
-# echo "--- Uploading dbt artifacts to GCS ---"
-# gsutil cp -r "$DBT_TARGET_PATH" "gs://tu-bucket-de-artefactos/dbt-transform-job/$(date +%Y-%m-%d)/"
-# gsutil cp -r "$LOG_DIR" "gs://tu-bucket-de-artefactos/dbt-transform-job/$(date +%Y-%m-%d)/"
-
-echo "✅ dbt run and test completed successfully!"
+echo "✅ dbt test completado con éxito."
+echo "🎉 ¡Pipeline de dbt finalizado exitosamente! 🎉"

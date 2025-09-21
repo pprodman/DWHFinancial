@@ -1,4 +1,4 @@
-# .github/workflows/deploy-dbt-job.yml
+# .github/workflows/deploy-dbt-job.yml (VERSIÓN SIMPLIFICADA)
 
 name: 'Deploy & Run: dbt Transformation Job'
 
@@ -8,27 +8,20 @@ on:
     paths:
       - 'dbt_project/**'
       - '.github/workflows/deploy-dbt-job.yml'
-      - 'dbt_project/cloudbuild.yaml'
-  
   workflow_dispatch:
-    inputs:
-      run_job_after_deploy:
-        description: 'Execute job immediately after deployment?'
-        required: true
-        default: true
-        type: boolean
 
-# --- Variables de Configuración Centralizadas ---
 env:
   PROJECT_ID: 'dwhfinancial'
   REGION: 'us-central1'
   REPOSITORY: 'cloud-run-source-deploy' # Repositorio en Artifact Registry
   JOB_NAME: 'dbt-transform-job'
-  JOB_SERVICE_ACCOUNT: 'drive-reader-sa@dwhfinancial.iam.gserviceaccount.com'
+  # La SA del Job que se ejecuta en Cloud Run
+  JOB_SERVICE_ACCOUNT: 'drive-reader-sa@dwhfinancial.iam.gserviceaccount.com' 
+  # La SA que usa GitHub para desplegar
   DEPLOYER_SERVICE_ACCOUNT: 'github-actions-deployer@dwhfinancial.iam.gserviceaccount.com'
 
 jobs:
-  # Job 1: Construye la imagen y despliega el Job usando Cloud Build
+  # Job 1: Construye y despliega la imagen en un solo paso
   build-and-deploy:
     name: 'Build and Deploy'
     runs-on: ubuntu-latest
@@ -49,25 +42,28 @@ jobs:
       - name: 'Set up gcloud CLI'
         uses: 'google-github-actions/setup-gcloud@v2'
 
-      - name: 'Submit to Cloud Build'
-        id: build
+      - name: 'Build and Deploy Job from Source'
+        id: deploy
         run: |
-          echo "🚀 Submitting build to Cloud Build..."
-          gcloud builds submit ./dbt_project \
-            --config=./dbt_project/cloudbuild.yaml \
+          echo "🚀 Building from source and deploying job: ${{ env.JOB_NAME }}"
+          
+          # Este comando hace todo el trabajo pesado
+          gcloud run jobs deploy ${{ env.JOB_NAME }} \
             --project=${{ env.PROJECT_ID }} \
-            --substitutions="_JOB_NAME=${{ env.JOB_NAME }},_REGION=${{ env.REGION }},_LOCATION=${{ env.REGION }},_REPOSITORY=${{ env.REPOSITORY }},_IMAGE_TAG=${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/dbt-transform-job:${{ github.sha }}"
+            --region=${{ env.REGION }} \
+            --source=./dbt_project \
+            --service-account=${{ env.JOB_SERVICE_ACCOUNT }} \
+            --quiet
+            
+          echo "✅ Job deployed successfully!"
 
-  # Job 2: Ejecuta el Job recién desplegado
+  # Job 2 (Opcional): Ejecuta el Job después de un despliegue exitoso
   execute-job:
     name: 'Execute dbt Job'
     runs-on: ubuntu-latest
     needs: build-and-deploy
-    # Condición: Solo se ejecuta si el build fue exitoso y el input lo permite
-    if: |
-      always() && needs.build-and-deploy.result == 'success' &&
-      (github.event.inputs.run_job_after_deploy == 'true' || github.event_name == 'push')
-      
+    if: github.event_name == 'push' # Se ejecuta solo en push a main
+
     permissions:
       id-token: 'write'
       contents: 'read'
@@ -82,63 +78,7 @@ jobs:
       - name: 'Set up gcloud CLI'
         uses: 'google-github-actions/setup-gcloud@v2'
         
-      - name: 'Execute Cloud Run Job and Wait'
-        id: execute
+      - name: 'Execute Cloud Run Job and Wait for Result'
         run: |
           echo "⚡ Starting execution for job: ${{ env.JOB_NAME }}"
-          EXECUTION_NAME=$(gcloud run jobs execute ${{ env.JOB_NAME }} \
-            --project=${{ env.PROJECT_ID }} \
-            --region=${{ env.REGION }} \
-            --format="value(metadata.name)" \
-            --wait) 
-
-          echo "✅ Execution finished with name: $EXECUTION_NAME"
-          
-          # Verificar el estado final después de esperar
-          FINAL_STATE=$(gcloud run jobs executions describe $EXECUTION_NAME \
-            --project=${{ env.PROJECT_ID }} \
-            --region=${{ env.REGION }} \
-            --format="value(status.conditions[?(@.type=='Completed')].status)")
-
-          if [ "$FINAL_STATE" != "True" ]; then
-            echo "❌ Execution failed."
-            
-            echo "--- Fetching last 50 error logs ---"
-            gcloud logging read "resource.type=\"cloud_run_job\" resource.labels.job_name=\"${{ env.JOB_NAME }}\" labels.\"run.googleapis.com/execution_name\"=\"$EXECUTION_NAME\" severity>=ERROR" \
-              --project=${{ env.PROJECT_ID }} --limit=50 --format="table(timestamp,logName,textPayload)"
-            
-            exit 1
-          else
-            echo "🎉 Execution completed successfully."
-          fi
-
-  # Job 3: Limpia imágenes antiguas de Artifact Registry
-  cleanup-images:
-    name: 'Cleanup Old Images'
-    runs-on: ubuntu-latest
-    needs: build-and-deploy
-    # Solo se ejecuta si el despliegue fue exitoso en la rama main
-    if: always() && needs.build-and-deploy.result == 'success' && github.ref == 'refs/heads/main'
-
-    permissions:
-      id-token: 'write'
-      contents: 'read'
-
-    steps:
-      - name: 'Authenticate to Google Cloud'
-        uses: 'google-github-actions/auth@v2'
-        with:
-          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
-          service_account: ${{ env.DEPLOYER_SERVICE_ACCOUNT }}
-
-      - name: 'Set up gcloud CLI'
-        uses: 'google-github-actions/setup-gcloud@v2'
-
-      - name: 'Delete all but the 10 newest images'
-        run: |
-          echo "🧹 Cleaning up old container images..."
-          gcloud artifacts docker images list-tags ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/dbt-transform-job \
-            --limit=9999 --sort-by=~TIMESTAMP \
-            --filter='-tags:latest' \
-            --format='get(digest)' | tail -n +11 | \
-            xargs -I {} gcloud artifacts docker images delete ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/dbt-transform-job@{} --quiet
+          gcloud run jobs execute ${{ env.JOB_NAME }} --wait --region=${{ env.REGION }}

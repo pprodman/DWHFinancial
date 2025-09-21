@@ -170,7 +170,9 @@ def _process_account_folder(drive_service, account_folder: dict, bank_name: str,
 
         try:
             _move_file_in_drive(drive_service, file_id, pending_id, in_progress_id)
-            clean_df = _process_and_enrich_dataframe(drive_service, file_id, config, bank_name, account_type_name)
+            
+            # --- LÍNEA CORREGIDA ---
+            clean_df = _process_and_enrich_dataframe(drive_service, file_id, file_name, config, bank_name, account_type_name)
             
             if not clean_df.empty:
                 jsonl_data = clean_df.to_json(orient='records', lines=True, date_format='iso')

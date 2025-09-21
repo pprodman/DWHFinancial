@@ -56,9 +56,23 @@ def _generate_transaction_id(row: pd.Series) -> str:
     unique_string = f"{fecha_str}-{concepto_str}-{importe_str}"
     return hashlib.sha256(unique_string.encode('utf-8')).hexdigest()
 
-def _process_and_enrich_dataframe(drive_service, file_id: str, config: dict, bank: str, account_type: str) -> pd.DataFrame:
-    """Lee, limpia, enriquece y estandariza los datos de un archivo XLSX."""
+def _process_and_enrich_dataframe(drive_service, file_id: str, file_name: str, config: dict, bank: str, account_type: str) -> pd.DataFrame:
+    """Lee, limpia, enriquece y estandariza los datos.
+    Selecciona dinámicamente el motor de Pandas basado en la extensión del archivo (.xls o .xlsx).
+    """
     try:
+        # Determinar el motor de lectura basado en la extensión del archivo
+        file_extension = os.path.splitext(file_name)[1].lower()
+        if file_extension == '.xlsx':
+            engine = 'openpyxl'
+        elif file_extension == '.xls':
+            engine = 'xlrd'
+        else:
+            logging.error(f"Formato de archivo no soportado para '{file_name}': {file_extension}")
+            return pd.DataFrame()
+
+        logging.info(f"Leyendo archivo '{file_name}' con el motor de Pandas: '{engine}'")
+        
         request = drive_service.files().get_media(fileId=file_id)
         file_bytes = io.BytesIO(request.execute())
         
@@ -67,10 +81,11 @@ def _process_and_enrich_dataframe(drive_service, file_id: str, config: dict, ban
             sheet_name=config.get('sheet_name', 0),
             skiprows=config.get('skip_rows', 0),
             skipfooter=config.get('skip_footer', 0),
-            engine='openpyxl'
+            engine=engine # <-- Usamos la variable de motor dinámico
         )
-    except HttpError as e:
-        logging.error(f"Error de la API de Drive al descargar el archivo ID {file_id}: {e}")
+    except Exception as e:
+        # Este 'except' ahora puede capturar errores de xlrd como "Unsupported format"
+        logging.error(f"Error al leer el archivo Excel '{file_name}' con Pandas: {e}")
         return pd.DataFrame()
 
     df.rename(columns=config['column_mapping'], inplace=True)

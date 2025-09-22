@@ -47,7 +47,7 @@ def get_drive_credentials() -> service_account.Credentials:
         logging.error(f"No se pudieron obtener las credenciales de Secret Manager: {e}")
         raise
 
-def _generate_transaction_id(row: pd.Series) -> str:
+def _generate_hash_id(row: pd.Series) -> str:
     """Genera un ID único y determinista para una transacción."""
     fecha_str = str(row['fecha'])
     concepto_str = str(row['concepto']).strip().lower()
@@ -98,7 +98,6 @@ def _process_and_enrich_dataframe(drive_service, file_id: str, file_name: str, c
         
         df = pd.read_excel(
             file_bytes,
-            sheet_name=config.get('sheet_name', 0),
             skiprows=config.get('skip_rows', 0),
             skipfooter=config.get('skip_footer', 0),
             engine=engine
@@ -126,10 +125,10 @@ def _process_and_enrich_dataframe(drive_service, file_id: str, file_name: str, c
         return df
 
     df['banco'] = bank
-    df['tipo_cuenta'] = account_type
-    df['transaction_id'] = df.apply(_generate_transaction_id, axis=1)
+    df['origen'] = account_type
+    df['hash_id'] = df.apply(_generate_hash_id, axis=1)
 
-    final_columns = ['transaction_id', 'fecha', 'concepto', 'importe', 'banco', 'tipo_cuenta']
+    final_columns = ['hash_id', 'fecha', 'concepto', 'importe', 'banco', 'origen']
     return df[final_columns]
 
 def _move_file_in_drive(drive_service, file_id: str, current_parent_id: str, new_parent_id: str):

@@ -13,7 +13,6 @@ todos AS (
 )
 
 SELECT
-    transaccion_id,
     fecha,
     concepto,
     importe,

@@ -1,19 +1,25 @@
 {
-  "BANKINTER": {
+  "BAKINTER": {
     "ACCOUNT": {
       "sheet_name": 0,
-      "skip_rows": 4,
+      "skip_rows": 3,
       "skip_footer": 0,
-      "use_columns_by_position": [1, 2, 3],
-      "final_column_names": ["fecha", "concepto", "importe"],
+      "column_mapping": {
+        "FECHA VALOR": "fecha",
+        "DESCRIPCION": "concepto",
+        "IMPORTE": "importe"
+      },
       "date_format": "%d/%m/%Y"
     },
     "CARD": {
       "sheet_name": 0,
-      "skip_rows": 6,
+      "skip_rows": 4,
       "skip_footer": 1,
-      "use_columns_by_position": [0, 1, 2],
-      "final_column_names": ["fecha", "concepto", "importe"],
+      "column_mapping": {
+        "FECHA": "fecha",
+        "COMERCIO/CAJERO": "concepto",
+        "IMPORTE": "importe"
+      },
       "date_format": "%d/%m/%Y"
     }
   }

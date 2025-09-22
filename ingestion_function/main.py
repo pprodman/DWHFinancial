@@ -60,8 +60,7 @@ def _generate_transaction_id(row: pd.Series) -> str:
 
 def _process_and_enrich_dataframe(drive_service, file_id: str, file_name: str, config: dict, bank: str, account_type: str) -> pd.DataFrame:
     """
-    MEJORADO: Lee, limpia, enriquece y estandariza los datos.
-    Usa una estrategia de selección por posición para ser más robusto.
+    Lee, limpia, enriquece y estandariza los datos.
     """
     try:
         file_extension = os.path.splitext(file_name)[1].lower()
@@ -79,37 +78,36 @@ def _process_and_enrich_dataframe(drive_service, file_id: str, file_name: str, c
         request = drive_service.files().get_media(fileId=file_id)
         file_bytes = io.BytesIO(request.execute())
         
-        # Leemos el excel SIN encabezado, para que las columnas sean numéricas (0, 1, 2...)
         df = pd.read_excel(
             file_bytes,
             sheet_name=config.get('sheet_name', 0),
             skiprows=config.get('skip_rows', 0),
             skipfooter=config.get('skip_footer', 0),
-            engine=engine,
-            header=None  # <-- ¡CLAVE! Le decimos a Pandas que no hay encabezado.
+            engine=engine
         )
     except Exception as e:
         logging.error(f"Error al leer el archivo Excel '{file_name}' con Pandas: {e}")
         return pd.DataFrame()
 
-    # --- Nueva Lógica de Selección y Renombrado ---
-    try:
-        # 1. Seleccionar columnas por su posición (ej. 1, 2, 3)
-        column_positions = config['use_columns_by_position']
-        df = df.iloc[:, column_positions]
-        
-        # 2. Asignar los nombres de columna finales
-        final_names = config['final_column_names']
-        df.columns = final_names
-        
-        required_cols = final_names
-    except (KeyError, IndexError) as e:
-        logging.error(f"Error de configuración o de estructura de archivo para '{file_name}'. Revisa 'use_columns_by_position' y 'final_column_names' en bank_configs.json. Error: {e}")
+    # Renombrar columnas ANTES de seleccionar
+    df.rename(columns=config['column_mapping'], inplace=True)
+    required_cols = list(config['column_mapping'].values())
+    
+    if not all(col in df.columns for col in required_cols):
+        logging.error(f"Faltan columnas requeridas en el archivo. Se esperaban: {required_cols}, se encontraron: {list(df.columns)}")
         return pd.DataFrame()
-        
-    # --- El resto de la lógica continúa igual, ahora con un DataFrame limpio ---
-    df['fecha'] = pd.to_datetime(df['fecha'], format=config.get('date_format'), errors='coerce').dt.strftime('%Y-%m-%d')
-    df['importe'] = pd.to_numeric(df['importe'].astype(str).str.replace(',', '.'), errors='coerce')
+
+    # Seleccionar solo las columnas que necesitamos
+    df = df[required_cols]
+    
+    # --- Lógica de Limpieza Corregida ---
+    df['fecha'] = pd.to_datetime(df['fecha'], format=config.get('date_format'), errors='coerce')
+    
+    # --- NUEVO: Proceso de 2 pasos para limpiar números europeos ---
+    # 1. Quitar el separador de miles ('.')
+    # 2. Reemplazar la coma decimal ',' por un punto '.'
+    df['importe'] = df['importe'].astype(str).str.replace('.', '', regex=False).str.replace(',', '.', regex=False)
+    df['importe'] = pd.to_numeric(df['importe'], errors='coerce')
     
     df.dropna(subset=['fecha', 'concepto', 'importe'], inplace=True)
     if df.empty:

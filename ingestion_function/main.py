@@ -117,7 +117,7 @@ def _process_and_enrich_dataframe(drive_service, file_id: str, file_name: str, c
 
     df = df[required_cols]
     
-    df['fecha'] = pd.to_datetime(df['fecha'], format=config.get('date_format'), errors='coerce')
+    df['fecha'] = pd.to_datetime(df['fecha'], format=config.get('date_format'), errors='coerce').dt.strftime('%Y-%m-%d')
     df['importe'] = df['importe'].astype(str).apply(locale.atof)
     df['importe'] = pd.to_numeric(df['importe'], errors='coerce')
     

@@ -56,13 +56,16 @@ def _generate_transaction_id(row: pd.Series) -> str:
     unique_string = f"{fecha_str}-{concepto_str}-{importe_str}"
     return hashlib.sha256(unique_string.encode('utf-8')).hexdigest()
 
+# ingestion_function/main.py
+
 def _process_and_enrich_dataframe(drive_service, file_id: str, file_name: str, config: dict, bank: str, account_type: str) -> pd.DataFrame:
-    """Lee, limpia, enriquece y estandariza los datos.
-    Selecciona dinámicamente el motor de Pandas basado en la extensión del archivo (.xls o .xlsx).
+    """
+    MEJORADO: Lee, limpia, enriquece y estandariza los datos.
+    Usa una estrategia de selección por posición para ser más robusto.
     """
     try:
-        # Determinar el motor de lectura basado en la extensión del archivo
         file_extension = os.path.splitext(file_name)[1].lower()
+        engine = None
         if file_extension == '.xlsx':
             engine = 'openpyxl'
         elif file_extension == '.xls':
@@ -76,26 +79,35 @@ def _process_and_enrich_dataframe(drive_service, file_id: str, file_name: str, c
         request = drive_service.files().get_media(fileId=file_id)
         file_bytes = io.BytesIO(request.execute())
         
+        # Leemos el excel SIN encabezado, para que las columnas sean numéricas (0, 1, 2...)
         df = pd.read_excel(
             file_bytes,
             sheet_name=config.get('sheet_name', 0),
             skiprows=config.get('skip_rows', 0),
             skipfooter=config.get('skip_footer', 0),
-            engine=engine # <-- Usamos la variable de motor dinámico
+            engine=engine,
+            header=None  # <-- ¡CLAVE! Le decimos a Pandas que no hay encabezado.
         )
     except Exception as e:
-        # Este 'except' ahora puede capturar errores de xlrd como "Unsupported format"
         logging.error(f"Error al leer el archivo Excel '{file_name}' con Pandas: {e}")
         return pd.DataFrame()
 
-    df.rename(columns=config['column_mapping'], inplace=True)
-    required_cols = list(config['column_mapping'].values())
-    
-    if not all(col in df.columns for col in required_cols):
-        logging.error(f"Faltan columnas requeridas en el archivo. Se esperaban: {required_cols}, se encontraron: {list(df.columns)}")
+    # --- Nueva Lógica de Selección y Renombrado ---
+    try:
+        # 1. Seleccionar columnas por su posición (ej. 1, 2, 3)
+        column_positions = config['use_columns_by_position']
+        df = df.iloc[:, column_positions]
+        
+        # 2. Asignar los nombres de columna finales
+        final_names = config['final_column_names']
+        df.columns = final_names
+        
+        required_cols = final_names
+    except (KeyError, IndexError) as e:
+        logging.error(f"Error de configuración o de estructura de archivo para '{file_name}'. Revisa 'use_columns_by_position' y 'final_column_names' en bank_configs.json. Error: {e}")
         return pd.DataFrame()
-
-    df = df[required_cols]
+        
+    # --- El resto de la lógica continúa igual, ahora con un DataFrame limpio ---
     df['fecha'] = pd.to_datetime(df['fecha'], format=config.get('date_format'), errors='coerce').dt.strftime('%Y-%m-%d')
     df['importe'] = pd.to_numeric(df['importe'].astype(str).str.replace(',', '.'), errors='coerce')
     
@@ -143,19 +155,24 @@ def _get_folder_id(drive_service, parent_id: str, folder_name: str, create_if_no
     return None
 
 def _process_account_folder(drive_service, account_folder: dict, bank_name: str, config: dict):
-    """Procesa todos los archivos para un tipo de cuenta específico."""
+    """
+    MEJORADO: Procesa todos los archivos para un tipo de cuenta específico.
+    Si un archivo falla, lo devuelve a la carpeta 'pending' para reintentarlo.
+    """
     account_type_name = account_folder['name']
     account_folder_id = account_folder['id']
     logging.info(f"--- Procesando carpeta de cuenta: {bank_name}/{account_type_name} ---")
 
+    # Obtener IDs de carpetas, creando 'in_progress' si no existe.
     pending_id = _get_folder_id(drive_service, account_folder_id, PENDING_FOLDER_NAME)
     processed_id = _get_folder_id(drive_service, account_folder_id, PROCESSED_FOLDER_NAME)
     in_progress_id = _get_folder_id(drive_service, account_folder_id, IN_PROGRESS_FOLDER_NAME, create_if_not_exists=True)
 
     if not all([pending_id, processed_id, in_progress_id]):
-        logging.warning(f"Falta la estructura de carpetas 'pending' o 'processed' en {bank_name}/{account_type_name}. Se omite.")
+        logging.error(f"Falta la estructura de carpetas críticas en {bank_name}/{account_type_name}. Se omite.")
         return
 
+    # Buscar archivos en la carpeta 'pending'
     q_files = f"'{pending_id}' in parents and trashed=false"
     files = drive_service.files().list(q=q_files, fields="files(id, name)").execute().get('files', [])
 
@@ -169,25 +186,37 @@ def _process_account_folder(drive_service, account_folder: dict, bank_name: str,
         logging.info(f"Procesando archivo: {file_name} (ID: {file_id})")
 
         try:
+            # 1. Mover a 'in_progress' para evitar que otra instancia lo tome.
             _move_file_in_drive(drive_service, file_id, pending_id, in_progress_id)
             
-            # --- LÍNEA CORREGIDA ---
+            # 2. Intentar procesar el archivo.
             clean_df = _process_and_enrich_dataframe(drive_service, file_id, file_name, config, bank_name, account_type_name)
             
-            if not clean_df.empty:
-                jsonl_data = clean_df.to_json(orient='records', lines=True, date_format='iso')
-                gcs_path = f"{bank_name}/{account_type_name}/{os.path.splitext(file_name)[0]}.jsonl"
-                
-                blob = storage_client.bucket(GCS_BUCKET_NAME).blob(gcs_path)
-                blob.upload_from_string(jsonl_data, content_type='application/jsonl')
-                logging.info(f"Archivo subido a GCS: gs://{GCS_BUCKET_NAME}/{gcs_path}")
-            else:
-                logging.warning(f"El archivo {file_name} no contenía datos válidos tras la limpieza.")
+            if clean_df.empty:
+                raise ValueError(f"El DataFrame resultante para '{file_name}' está vacío. No hay datos válidos para procesar.")
 
+            # 3. Si hay datos, subirlos a GCS.
+            jsonl_data = clean_df.to_json(orient='records', lines=True, date_format='iso')
+            gcs_path = f"{bank_name}/{account_type_name}/{os.path.splitext(file_name)[0]}.jsonl"
+            
+            blob = storage_client.bucket(GCS_BUCKET_NAME).blob(gcs_path)
+            blob.upload_from_string(jsonl_data, content_type='application/jsonl')
+            logging.info(f"Archivo subido a GCS: gs://{GCS_BUCKET_NAME}/{gcs_path}")
+
+            # 4. Si todo ha ido bien, mover de 'in_progress' a 'processed'.
             _move_file_in_drive(drive_service, file_id, in_progress_id, processed_id)
+            logging.info(f"Archivo '{file_name}' procesado con éxito.")
 
         except Exception as e:
-            logging.error(f"Error CRÍTICO procesando el archivo {file_name}. Se quedará en 'in_progress' para revisión manual. Error: {e}")
+            # --- NUEVA LÓGICA DE MANEJO DE ERRORES ---
+            # Si cualquier paso del bloque 'try' falla, se ejecuta este bloque.
+            logging.error(f"Error procesando el archivo '{file_name}'. Se devolverá a 'pending' para reintentarlo. Error: {e}")
+            try:
+                # Intentar mover el archivo de 'in_progress' de vuelta a 'pending'.
+                _move_file_in_drive(drive_service, file_id, in_progress_id, pending_id)
+            except Exception as move_error:
+                # Si incluso el movimiento de vuelta falla, el archivo se quedará en 'in_progress'.
+                logging.critical(f"¡FALLO IRRECUPERABLE! No se pudo devolver el archivo '{file_name}' a 'pending'. Se quedará en 'in_progress'. Error de movimiento: {move_error}")
 
 # --- Punto de Entrada de la Cloud Function (Modificado para Pub/Sub) ---
 @functions_framework.cloud_event

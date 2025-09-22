@@ -124,7 +124,7 @@ def _process_and_enrich_dataframe(drive_service, file_id: str, file_name: str, c
     if df.empty:
         return df
 
-    df['banco'] = bank.capitalize()
+    df['entidad'] = bank.capitalize()
     df['origen'] = account_type.capitalize()
     df['hash_id'] = df.apply(_generate_hash_id, axis=1)
 

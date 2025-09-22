@@ -124,11 +124,11 @@ def _process_and_enrich_dataframe(drive_service, file_id: str, file_name: str, c
     if df.empty:
         return df
 
-    df['banco'] = bank
-    df['origen'] = account_type
+    df['banco'] = bank.capitalize()
+    df['origen'] = account_type.capitalize()
     df['hash_id'] = df.apply(_generate_hash_id, axis=1)
 
-    final_columns = ['hash_id', 'fecha', 'concepto', 'importe', 'banco', 'origen']
+    final_columns = ['hash_id', 'fecha', 'concepto', 'importe', 'entidad', 'origen']
     return df[final_columns]
 
 def _move_file_in_drive(drive_service, file_id: str, current_parent_id: str, new_parent_id: str):

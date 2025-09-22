@@ -96,7 +96,7 @@ def _process_and_enrich_dataframe(drive_service, file_id: str, file_name: str, c
         return pd.DataFrame()
 
     df = df[required_cols]
-    df['fecha'] = pd.to_datetime(df['fecha'], format=config.get('date_format'), errors='coerce')
+    df['fecha'] = pd.to_datetime(df['fecha'], format=config.get('date_format'), errors='coerce').dt.strftime('%Y-%m-%d')
     df['importe'] = pd.to_numeric(df['importe'].astype(str).str.replace(',', '.'), errors='coerce')
     
     df.dropna(subset=['fecha', 'concepto', 'importe'], inplace=True)

@@ -58,24 +58,42 @@ def _generate_transaction_id(row: pd.Series) -> str:
 
 # ingestion_function/main.py
 
+# ingestion_function/main.py
+
 def _process_and_enrich_dataframe(drive_service, file_id: str, file_name: str, config: dict, bank: str, account_type: str) -> pd.DataFrame:
     """
     Lee, limpia, enriquece y estandariza los datos.
+    Maneja tanto archivos Excel binarios (.xls/.xlsx) como Hojas de Cálculo de Google.
     """
     try:
-        file_extension = os.path.splitext(file_name)[1].lower()
-        engine = None
-        if file_extension == '.xlsx':
-            engine = 'openpyxl'
-        elif file_extension == '.xls':
-            engine = 'xlrd'
-        else:
-            logging.error(f"Formato de archivo no soportado para '{file_name}': {file_extension}")
-            return pd.DataFrame()
-
-        logging.info(f"Leyendo archivo '{file_name}' con el motor de Pandas: '{engine}'")
+        logging.info(f"Procesando archivo '{file_name}' (ID: {file_id})")
         
-        request = drive_service.files().get_media(fileId=file_id)
+        # Obtener los metadatos del archivo para saber su tipo
+        file_metadata = drive_service.files().get(fileId=file_id, fields='mimeType').execute()
+        mime_type = file_metadata.get('mimeType')
+
+        if mime_type == 'application/vnd.google-apps.spreadsheet':
+            # Es una Hoja de Cálculo de Google, necesitamos exportarla
+            logging.info(f"'{file_name}' es una Hoja de Cálculo de Google. Exportando a formato XLSX...")
+            request = drive_service.files().export_media(
+                fileId=file_id,
+                mimeType='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' # Exportar como .xlsx
+            )
+            # Al exportar, siempre usamos el motor 'openpyxl'
+            engine = 'openpyxl'
+        else:
+            # Es un archivo binario (probablemente .xls o .xlsx), lo descargamos directamente
+            logging.info(f"'{file_name}' es un archivo binario ({mime_type}). Descargando...")
+            file_extension = os.path.splitext(file_name)[1].lower()
+            if file_extension == '.xlsx':
+                engine = 'openpyxl'
+            elif file_extension == '.xls':
+                engine = 'xlrd'
+            else:
+                logging.error(f"Formato de archivo binario no soportado para '{file_name}': {file_extension}")
+                return pd.DataFrame()
+            request = drive_service.files().get_media(fileId=file_id)
+
         file_bytes = io.BytesIO(request.execute())
         
         df = pd.read_excel(
@@ -89,7 +107,7 @@ def _process_and_enrich_dataframe(drive_service, file_id: str, file_name: str, c
         logging.error(f"Error al leer el archivo Excel '{file_name}' con Pandas: {e}")
         return pd.DataFrame()
 
-    # Renombrar columnas ANTES de seleccionar
+    # --- El resto del código continúa exactamente igual ---
     df.rename(columns=config['column_mapping'], inplace=True)
     required_cols = list(config['column_mapping'].values())
     
@@ -97,15 +115,9 @@ def _process_and_enrich_dataframe(drive_service, file_id: str, file_name: str, c
         logging.error(f"Faltan columnas requeridas en el archivo. Se esperaban: {required_cols}, se encontraron: {list(df.columns)}")
         return pd.DataFrame()
 
-    # Seleccionar solo las columnas que necesitamos
     df = df[required_cols]
     
-    # --- Lógica de Limpieza Corregida ---
     df['fecha'] = pd.to_datetime(df['fecha'], format=config.get('date_format'), errors='coerce')
-    
-    # --- NUEVO: Proceso de 2 pasos para limpiar números europeos ---
-    # 1. Quitar el separador de miles ('.')
-    # 2. Reemplazar la coma decimal ',' por un punto '.'
     df['importe'] = df['importe'].astype(str).str.replace('.', '', regex=False).str.replace(',', '.', regex=False)
     df['importe'] = pd.to_numeric(df['importe'], errors='coerce')
     

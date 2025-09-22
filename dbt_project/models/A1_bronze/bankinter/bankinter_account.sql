@@ -1,13 +1,13 @@
 {{
   config(
     materialized = 'incremental',
-    unique_key = 'transaccion_id',
+    unique_key = 'hash_id',
     on_schema_change = 'sync_all_columns'
   )
 }}
 
 SELECT
-    transaccion_id,
+    hash_id,
     fecha,
     concepto,
     importe,
@@ -16,8 +16,8 @@ SELECT
 FROM {{ source('bronze_raw', 'bankinter_account') }}
 
 {% if is_incremental() %}
-  WHERE transaccion_id NOT IN (
-    SELECT transaccion_id
+  WHERE hash_id NOT IN (
+    SELECT hash_id
     FROM {{ this }}
   )
 {% endif %}

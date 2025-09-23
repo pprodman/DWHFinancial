@@ -1,0 +1,49 @@
+keyword,entity_name,priority
+-- Prioridad Alta para nombres específicos
+AMAZON PRIME,Amazon Prime,3
+IBERDROLA CLIENTES,Iberdrola,4
+DIGI SPAIN TELECOM,Digi,4
+BRIDGE BROKER SL,Bridge Broker,4
+SANTANDER CONSUMER,Santander Consumer,4
+FINANCIERA EL CORTE ING,Financiera El Corte Inglés,4
+AMAZON WEB SERVICES,Amazon AWS,3
+AWS,Amazon AWS,3
+AYUNTAMIENTO DE CASTELLON,Ayuntamiento de Castellón,4
+
+-- Nombres de Comercios y Servicios
+AMAZON.ES,Amazon,5
+AMZN MKTP,Amazon,5
+AMAZON*,Amazon,5
+ALIEXPRESS,AliExpress,5
+MIRAVIA.ES,Miravia,5
+MERCADONA,Mercadona,5
+LIDL,Lidl,5
+CONSUM,Consum,5
+ALCAMPO,Alcampo,5
+EL CORTE INGLES,El Corte Inglés,5
+JAZZTEL,Jazztel,5
+RYANAIR,Ryanair,5
+AIRBNB,Airbnb,5
+BOOKING.COM,Booking.com,5
+REVOLUT,Revolut,5
+BINANCE,Binance,5
+COINBASE,Coinbase,5
+PROZIS,Prozis,5
+DECATHLON,Decathlon,5
+PCCOMPONENTES,PcComponentes,5
+MEDIA MARKT,Media Markt,5
+COOLMOD,Coolmod,5
+FNAC,Fnac,5
+LEROY MERLIN,Leroy Merlin,5
+DRUNI,Druni,5
+KIWOKO,Kiwoko,5
+ZOOPLUS,Zooplus,5
+UDEMY,Udemy,5
+TELPARK,Telpark,5
+EASYPARK,EasyPark,5
+RENFE,Renfe,5
+GLOVO,Glovo,5
+WALLAPOP,Wallapop,5
+SAMSUNG,Samsung,5
+SPOTIFY,Spotify,5
+NETFLIX,Netflix,5

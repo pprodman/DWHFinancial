@@ -1,0 +1,146 @@
+keyword,category,priority
+-- INGRESOS (Prioridad Máxima)
+NÓMINA,Ingreso - Nómina,1
+SALARIO,Ingreso - Nómina,1
+PAGO.*EMPRESA,Ingreso - Nómina,1
+INGRESO.*TRANSFERENCIA,Ingreso - Otros,1
+DEVOLUCIÓN,Ingreso - Devolución,2
+REEMBOLSO,Ingreso - Devolución,2
+REINTEGRO,Ingreso - Devolución,2
+INTERESES,Ingreso - Intereses,2
+RENDIMIENTOS,Ingreso - Intereses,2
+FOGASA,Ingreso - Nómina,1
+SALDO A FAVOR,Ingreso - Otros,1
+DEVOLUCIONES T,Ingreso - Devolución,1
+TRANSF NOMI,Ingreso - Nómina,1
+PAGO BIZUM DE,Ingreso - Transferencia Recibida,2
+DEV PAGO BIZUM,Ingreso - Transferencia Recibida,2
+TRANSF INTERNA,Traspaso Interno,1
+CUENTA TU Y YO,Traspaso Interno,1
+REVOLUT,Traspaso Interno,3
+BNEXT,Traspaso Interno,3
+
+-- INVERSIONES
+BINANCE,Gasto - Inversión,4
+COINBASE,Gasto - Inversión,4
+
+-- SERVICIOS Y RECIBOS (Prioridad Alta)
+RECIBO /JAZZTEL,Gasto - Servicios,5
+RECIBO /IBERDROLA,Gasto - Servicios,5
+RECIBO /DIGI,Gasto - Servicios,5
+LUZ,Gasto - Servicios,5
+AGUA,Gasto - Servicios,5
+GAS,Gasto - Servicios,5
+INTERNET,Gasto - Servicios,5
+TELÉFONO,Gasto - Servicios,5
+MÓVIL,Gasto - Servicios,5
+ZURICH INSURANCE,Gasto - Financiero,5
+SEGURO,Gasto - Financiero,5
+HIPOTECA,Gasto - Financiero,5
+PRÉSTAMO,Gasto - Financiero,5
+FINANCIACIÓN,Gasto - Financiero,5
+TRADINGVIEW,Gasto - Suscripciones,5
+AMAZON PRIME,Gasto - Suscripciones,5
+
+-- IMPUESTOS Y COMISIONES
+AYUNTAMIENTO,Gasto - Impuestos y Tasas,5
+COMISIÓN,Gasto - Financiero,6
+COM. USO REDES,Gasto - Financiero,6
+
+-- SUPERMERCADO Y ALIMENTACIÓN
+SUPERMERCADO,Gasto - Alimentación,10
+MERCADONA,Gasto - Alimentación,10
+CARREFOUR,Gasto - Alimentación,10
+DIA,Gasto - Alimentación,10
+LIDL,Gasto - Alimentación,10
+ALDI,Gasto - Alimentación,10
+CONSUM,Gasto - Alimentación,10
+ALCAMPO,Gasto - Alimentación,10
+BON AREA,Gasto - Alimentación,10
+CASH CASTELLON,Gasto - Alimentación,10
+PANADERIA,Gasto - Alimentación,11
+FRIGORIFICOS SANZ,Gasto - Alimentación,11
+EMBOTITS,Gasto - Alimentación,11
+
+-- RESTAURACIÓN Y OCIO
+RESTAURANTE,Gasto - Ocio y Restaurantes,15
+CAFÉ,Gasto - Ocio y Restaurantes,15
+STARBUCKS,Gasto - Ocio y Restaurantes,15
+MCDONALDS,Gasto - Ocio y Restaurantes,15
+BURGER KING,Gasto - Ocio y Restaurantes,15
+CENA,Gasto - Ocio y Restaurantes,15
+COMIDA,Gasto - Ocio y Restaurantes,15
+BAR,Gasto - Ocio y Restaurantes,15
+PIZZERIA,Gasto - Ocio y Restaurantes,15
+HELADERIA,Gasto - Ocio y Restaurantes,15
+KEBAB,Gasto - Ocio y Restaurantes,15
+GLOVO,Gasto - Comida a domicilio,14
+TEATRO,Gasto - Ocio y Cultura,15
+AUDITORIO,Gasto - Ocio y Cultura,15
+
+-- COMPRAS
+AMAZON,Gasto - Compras Online,18
+EBAY,Gasto - Compras Online,18
+ALIEXPRESS,Gasto - Compras Online,18
+WORTEN,Gasto - Compras Online,18
+MEDIA MARKT,Gasto - Compras Online,18
+AMZN,Gasto - Compras Online,18
+MIRAVIA.ES,Gasto - Compras Online,18
+PROZIS,Gasto - Nutrición y Suplementos,17
+COOLMOD,Gasto - Tecnología,17
+PCCOMPONENTES,Gasto - Tecnología,17
+FNAC,Gasto - Tecnología,17
+MI.COM,Gasto - Tecnología,17
+SAMSUNG,Gasto - Tecnología,17
+LEROY MERLIN,Gasto - Hogar y Bricolaje,17
+DECATHLON,Gasto - Deportes,17
+TREKKINN,Gasto - Deportes,17
+CALZEDONIA,Gasto - Ropa y Accesorios,17
+SPRINGFIELD,Gasto - Ropa y Accesorios,17
+SINGULARU,Gasto - Ropa y Accesorios,17
+ETAM,Gasto - Ropa y Accesorios,17
+DRUNI,Gasto - Cuidado Personal,17
+PERFUMERIAS PRIMOR,Gasto - Cuidado Personal,17
+KIWOKO,Gasto - Mascotas,17
+ZOOPLUS,Gasto - Mascotas,17
+UDEMY,Gasto - Formación,17
+BONOS COMERCIO,Gasto - Compras Varias,17
+PAPAS,Gasto - Alimentación,11
+ROAST MARKET,Gasto - Alimentación,11
+
+-- SALUD
+FARMACIA,Gasto - Salud y Farmacia,15
+FARMATOP,Gasto - Salud y Farmacia,15
+FARMAFY,Gasto - Salud y Farmacia,15
+DIET.CENTRAL,Gasto - Salud y Farmacia,15
+
+-- TRANSPORTE Y VIAJES
+GASOLINA,Gasto - Transporte,16
+REPSOL,Gasto - Transporte,16
+CEPSA,Gasto - Transporte,16
+SHELL,Gasto - Transporte,16
+AUTO,Gasto - Transporte,16
+TALLER,Gasto - Transporte,16
+TELPARK,Gasto - Transporte y Parking,16
+EASYPARK,Gasto - Transporte y Parking,16
+PARKIMETER,Gasto - Transporte y Parking,16
+RYANAIR,Gasto - Viajes,16
+AIRBNB,Gasto - Viajes,16
+BOOKING.COM,Gasto - Viajes,16
+RENFE,Gasto - Transporte,16
+METRO,Gasto - Transporte,16
+BIZKAIBUS,Gasto - Transporte,16
+SITVAL ITV,Gasto - Vehículo,16
+AEROPORTO,Gasto - Transporte,16
+
+-- CUIDADO PERSONAL
+PELUQUERIA,Gasto - Cuidado Personal,15
+
+-- EFECTIVO Y TRANSFERENCIAS GENÉRICAS
+PAGO BIZUM A,Gasto - Transferencia Saliente,20
+BIZUM,Gasto - Transferencia Saliente,20
+TRANS,Gasto - Transferencia Saliente,25
+CAJERO,Gasto - Retirada Efectivo,20
+
+-- DEVOLUCIONES (anulaciones que reducen el gasto)
+ANUL.,Gasto - Devoluciones,2

@@ -10,3 +10,4 @@ google-auth
 # Librerías de procesamiento de datos
 pandas
 openpyxl
+xlrd==2.0.1

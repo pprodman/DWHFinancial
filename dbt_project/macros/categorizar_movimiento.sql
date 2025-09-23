@@ -17,6 +17,5 @@
                 WHEN REGEXP_CONTAINS(UPPER({{ concepto_col }}), r'(SEGURO|HIPOTECA|PRÉSTAMO|FINANCIACIÓN)') THEN 'Gasto - Financiero'
                 ELSE 'Gasto - Otros'
             END
-        ELSE 'Neutro'
     END
 {% endmacro %}

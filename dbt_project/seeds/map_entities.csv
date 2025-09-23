@@ -1,5 +1,4 @@
 keyword,entity_name,priority
--- Prioridad Alta para nombres específicos
 AMAZON PRIME,Amazon Prime,3
 IBERDROLA CLIENTES,Iberdrola,4
 DIGI SPAIN TELECOM,Digi,4
@@ -9,8 +8,6 @@ FINANCIERA EL CORTE ING,Financiera El Corte Inglés,4
 AMAZON WEB SERVICES,Amazon AWS,3
 AWS,Amazon AWS,3
 AYUNTAMIENTO DE CASTELLON,Ayuntamiento de Castellón,4
-
--- Nombres de Comercios y Servicios
 AMAZON.ES,Amazon,5
 AMZN MKTP,Amazon,5
 AMAZON*,Amazon,5

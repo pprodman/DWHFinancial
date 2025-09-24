@@ -1,8 +1,8 @@
-{% macro standardize_entity(concepto_column, fallback_column) %}
+{% macro standardize_entity(concepto_column, fallback_value) %}
     CASE
     {% set entity_mapping_query %}
         SELECT keyword, entity_name
-        FROM {{ ref('map_entities') }}
+        FROM {{ ref('map_entities') }} -- Apuntamos al seed de entidades
         ORDER BY priority ASC
     {% endset %}
 
@@ -14,6 +14,7 @@
         {% endfor %}
     {% endif %}
 
-    ELSE {{ fallback_column }} -- ¡El truco! Si no hay match, usa la columna original.
+    -- La nueva lógica de fallback. Usará lo que le pases como argumento.
+    ELSE {{ fallback_value }}
     END
 {% endmacro %}

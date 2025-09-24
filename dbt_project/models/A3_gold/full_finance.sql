@@ -23,7 +23,7 @@ SELECT
     END AS origen,
     tipo_movimiento,
     {{ categorize_transaction('concepto', 'importe') }} AS categoria,
-    {{ standardize_entity('concepto', 'entidad') }} AS comercio,
+    {{ standardize_entity('concepto', 'NULL') }} AS comercio,
     ABS(importe) AS importe_absoluto,
     EXTRACT(YEAR FROM fecha) AS anio,
     EXTRACT(MONTH FROM fecha) AS mes

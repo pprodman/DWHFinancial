@@ -35,3 +35,9 @@ models:
       +materialized: table
       +tags: ['gold', 'final']
       +schema: gold
+
+# Configuración para los seeds
+seeds:
+  mi_pipeline_bancario:
+    # Todos los seeds se materializarán en el dataset 'mappings'
+    +schema: mappings

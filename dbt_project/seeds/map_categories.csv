@@ -4,8 +4,8 @@ NOMIN,Nómina,1
 FOGASA,Indemnizaciones,1
 SALDO A FAVOR,Intereses,1
 DEVOLUCIONES T,Devoluciones,1
-PAGO BIZUM DE,Transferencias Bizum,2
-DEV PAGO BIZUM,Ingresos,2
+PAGO BIZUM DE,Transferencias Bizum,20
+DEV PAGO BIZUM,Ingresos,20
 LIQ. PROPIA CTA.,Intereses,1
 TRANSF INTERNA,Traspasos Internos,1
 CUENTA TU Y YO,Traspasos Internos,1
@@ -15,6 +15,8 @@ BNEXT,Traspasos Internos,3
 CAJA,Retirada Efectivo,2
 BINANCE,Inversión,4
 COINBASE,Inversión,4
+Finlux Tech,Inversión,4
+Paysafe,Inversión,4
 AMAZON PRIME,Suscripciones,5
 RECIBO /JAZZTEL,Hogar y Suministros,5
 RECIBO /IBERDROLA,Hogar y Suministros,5
@@ -22,6 +24,7 @@ RECIBO /DIGI,Hogar y Suministros,5
 ZURICH,Seguros,5
 TRADINGVIEW,Suscripciones,5
 IYZICO,Suscripciones,5
+RECIB /SANTANDER CONSUMER,Bauhaus,5
 AYUNTAMIENTO,Impuestos y Tasas,5
 COMISIÓN,Comisiones Bancarias,6
 COM. USO REDES,Comisiones Bancarias,6
@@ -105,6 +108,11 @@ BAKELITO,Restauración,14
 ASUABERRI GARELLANO,Restauración,14
 ARVOBILBAO,Restauración,14
 CENTOLLOS BILBAO,Restauración,14
+LA DAMA BLANCA,Restauración,14
+BURGER,Restauración,15
+VENTA GUADALEST,Restauración,14
+INTUR,Restauración,15
+MASET,Restauración,14
 AMAZON,Compras Online,18
 AMZN,Compras Online,18
 ALIEXPRESS,Compras Online,18
@@ -137,7 +145,7 @@ BAZAR,Bazares,17
 BONOS COMERCIO,Zapatería,17
 ADRIVI,Zapatería,17
 COMPUCENTER,Tecnología,17
-CUSTOM FIGTHER,Deportes,17
+CUSTOM FIGHTER,Deportes,17
 JYSK,Hogar y Bricolaje,17
 FERRETERIA ESCRIG,Hogar y Bricolaje,17
 G2A.COM,Compras Online,17
@@ -146,9 +154,10 @@ govee,Iluminación,17
 HAZELNUT,Ropa y Accesorios,17
 Wallapop,Compras Online,18
 ROAST MARKET,Compras Online,17
-SHADES OF COFFEE,Compras Online,17
+SHADES OF COFFEE,Compras Online,14
 MaxiCoffee,Compras Online,17
-EL CORTE ING,Compras Online,17
+EL CORTE ING,Compras,17
+EL CORTE INGLES VENTA DIS,Compras Online,16
 Riot Games,Compras Online,17
 g2g,Compras Online,17
 ANTONIA ALEJANDRA,Ropa y Accesorios,17
@@ -156,6 +165,8 @@ O-BI OINETAKOAK,Zapatería,17
 MS2 ,Tecnología,17
 IKEA,Hogar y Bricolaje,17
 MUY MUCHO,Hogar y Bricolaje,17
+omoton,Compras Online,17
+ALIPAY,Compras Online,18
 FARMACIA,Salud y Farmacia,15
 FARMATOP,Salud y Farmacia,15
 FARMAFY,Salud y Farmacia,15
@@ -182,4 +193,6 @@ AEROPORTO,Transporte,16
 PELUQUERIA,Cuidado Personal,15
 BIZUM,Transferencias Bizum,20
 TRANS,Transferencias,25
+Bridge Broker,Nómina,1
+BRIDGE BROKER,Nómina,1
 ANUL.,Devoluciones,2

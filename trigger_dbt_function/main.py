@@ -10,25 +10,21 @@ JOB_NAME = os.environ.get('JOB_NAME', 'dbt-transform-job')
 
 @functions_framework.cloud_event
 def trigger_dbt_job(cloud_event):
-    """Se ejecuta cuando un archivo se sube a GCS."""
     data = cloud_event.data
     file_name = data["name"]
     bucket_name = data["bucket"]
-    
     print(f"Nuevo archivo detectado: gs://{bucket_name}/{file_name}")
-    
-    # Inicializar el cliente de Cloud Run Jobs
+
+    # Cliente para Cloud Run Jobs (v2)
     client = run_v2.JobsClient()
-    job_path = f"projects/{PROJECT_ID}/locations/{REGION}/jobs/{JOB_NAME}"
-    
-    # Crear una ejecución
-    request = run_v2.RunJobRequest(name=job_path)
-    
+    name = f"projects/{PROJECT_ID}/locations/{REGION}/jobs/{JOB_NAME}"
+
     try:
-        operation = client.run_job(request=request)
-        print(f"Job ejecutado. Operación: {operation.operation.name}")
-        operation.result()  # Espera a que termine (opcional)
-        print("✅ Job completado.")
+        operation = client.run_job(request=run_v2.RunJobRequest(name=name))
+        print(f"Job iniciado. Operación: {operation.operation.name}")
+        # Opcional: esperar a que termine (no recomendado en funciones por timeout)
+        # operation.result()
+        print("✅ Job ejecutado exitosamente.")
     except Exception as e:
         print(f"❌ Error al ejecutar el job: {e}")
         raise

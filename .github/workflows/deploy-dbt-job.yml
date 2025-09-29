@@ -92,7 +92,7 @@ jobs:
   execute-job:
     name: 'Execute dbt Job'
     runs-on: ubuntu-latest
-    needs: deploy-trigger-function  # ← Ahora depende del trigger
+    needs: deploy-trigger-function
     
     if: |
       always() && needs.deploy-trigger-function.result == 'success' &&

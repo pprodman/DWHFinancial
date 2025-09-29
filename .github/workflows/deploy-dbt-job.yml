@@ -1,4 +1,4 @@
-# .github/workflows/deploy-dbt-job.yml (VERSIÓN SIMPLIFICADA)
+# .github/workflows/deploy-dbt-job.yml
 
 name: 'Deploy & Run: dbt Transformation Job'
 
@@ -7,21 +7,20 @@ on:
     branches: [ 'main' ]
     paths:
       - 'dbt_project/**'
+      - 'trigger_dbt_function/**'  # ← ¡Agregado!
       - '.github/workflows/deploy-dbt-job.yml'
   workflow_dispatch:
 
 env:
   PROJECT_ID: 'dwhfinancial'
   REGION: 'us-central1'
-  REPOSITORY: 'cloud-run-source-deploy' # Repositorio en Artifact Registry
+  REPOSITORY: 'cloud-run-source-deploy'
   JOB_NAME: 'dbt-transform-job'
-  # La SA del Job que se ejecuta en Cloud Run
   JOB_SERVICE_ACCOUNT: 'drive-reader-sa@dwhfinancial.iam.gserviceaccount.com' 
-  # La SA que usa GitHub para desplegar
   DEPLOYER_SERVICE_ACCOUNT: 'github-actions-deployer@dwhfinancial.iam.gserviceaccount.com'
 
 jobs:
-  # Job 1: Construye y despliega la imagen en un solo paso
+  # Job 1: Construye y despliega el job de dbt
   build-and-deploy:
     name: 'Build and Deploy'
     runs-on: ubuntu-latest
@@ -46,25 +45,57 @@ jobs:
         id: deploy
         run: |
           echo "🚀 Building from source and deploying job: ${{ env.JOB_NAME }}"
-          
-          # Este comando hace todo el trabajo pesado
           gcloud run jobs deploy ${{ env.JOB_NAME }} \
             --project=${{ env.PROJECT_ID }} \
             --region=${{ env.REGION }} \
             --source=./dbt_project \
             --service-account=${{ env.JOB_SERVICE_ACCOUNT }} \
             --quiet
-            
           echo "✅ Job deployed successfully!"
 
-  # Job 2 (Opcional): Ejecuta el Job después de un despliegue exitoso
+  # Job 2: Despliega la función de trigger (¡nuevo!)
+  deploy-trigger-function:
+    name: 'Deploy GCS Trigger Function'
+    runs-on: ubuntu-latest
+    needs: build-and-deploy
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+
+    steps:
+      - name: 'Checkout repository code'
+        uses: actions/checkout@v4
+
+      - name: 'Authenticate to Google Cloud'
+        uses: 'google-github-actions/auth@v2'
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ env.DEPLOYER_SERVICE_ACCOUNT }}
+
+      - name: 'Set up gcloud CLI'
+        uses: 'google-github-actions/setup-gcloud@v2'
+
+      - name: 'Deploy Cloud Function'
+        run: |
+          echo "🚀 Deploying GCS trigger function..."
+          gcloud functions deploy trigger-dbt-on-gcs \
+            --runtime python311 \
+            --trigger-bucket dwhfinancial-data-feed \
+            --entry-point trigger_dbt_job \
+            --source=./trigger_dbt_function \
+            --set-env-vars PROJECT_ID=${{ env.PROJECT_ID }},REGION=${{ env.REGION }},JOB_NAME=${{ env.JOB_NAME }} \
+            --service-account=${{ env.DEPLOYER_SERVICE_ACCOUNT }} \
+            --quiet
+          echo "✅ Trigger function deployed!"
+
+  # Job 3: Ejecuta el job manualmente (opcional)
   execute-job:
     name: 'Execute dbt Job'
     runs-on: ubuntu-latest
-    needs: build-and-deploy
+    needs: deploy-trigger-function  # ← Ahora depende del trigger
     
     if: |
-      always() && needs.build-and-deploy.result == 'success' &&
+      always() && needs.deploy-trigger-function.result == 'success' &&
       (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.event.inputs.run_job_after_deploy != 'false'))
 
     permissions:

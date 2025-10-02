@@ -270,4 +270,16 @@ def ingest_bank_statements_pubsub(cloud_event: CloudEvent):
                 logging.error(f"Error inesperado procesando la carpeta de cuenta '{bank_name}/{account_type_name}': {e}")
 
     logging.info("===== PIPELINE DE INGESTA COMPLETADO =====")
+
+        # --- NUEVO: Ejecutar el job de dbt después de la ingesta ---
+    try:
+        logging.info("Iniciando ejecución del job de dbt...")
+        from google.cloud import run_v2
+        client = run_v2.JobsClient()
+        job_name = f"projects/{PROJECT_ID}/locations/us-central1/jobs/dbt-transform-job"
+        operation = client.run_job(request=run_v2.RunJobRequest(name=job_name))
+        logging.info(f"Job de dbt iniciado con operación: {operation.operation.name}")
+    except Exception as e:
+        logging.error(f"Error al iniciar el job de dbt (no se interrumpe la ingesta): {e}")
+        
     return 'Proceso completado.', 200

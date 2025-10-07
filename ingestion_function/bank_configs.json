@@ -32,7 +32,7 @@
     }
   },
   "REVOLUT": {
-    "PERSONAL": {
+    "ACCOUNT": {
       "skip_rows": 0,
       "skip_footer": 0,
       "filter_completed": true,

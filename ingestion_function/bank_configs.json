@@ -30,5 +30,18 @@
       },
       "date_format": "%d/%m/%Y"
     }
+  },
+  "REVOLUT": {
+    "PERSONAL": {
+      "skip_rows": 0,
+      "skip_footer": 0,
+      "filter_completed": true,
+      "column_mapping": {
+        "Fecha de inicio": "fecha",
+        "Descripción": "concepto",
+        "Importe": "importe"
+      },
+      "date_format": "%Y-%m-%d %H:%M:%S"
+    }
   }
 }

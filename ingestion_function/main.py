@@ -57,14 +57,11 @@ def _generate_hash_id(row: pd.Series) -> str:
     unique_string = f"{fecha_str}-{concepto_str}-{importe_str}"
     return hashlib.sha256(unique_string.encode('utf-8')).hexdigest()
 
-# ingestion_function/main.py
-
-# ingestion_function/main.py
 
 def _process_and_enrich_dataframe(drive_service, file_id: str, file_name: str, config: dict, bank: str, account_type: str) -> pd.DataFrame:
     """
     Lee, limpia, enriquece y estandariza los datos.
-    Maneja tanto archivos Excel binarios (.xls/.xlsx) como Hojas de Cálculo de Google.
+    Soporta: Excel (.xls/.xlsx), Hojas de Google y CSV.
     """
     try:
         logging.info(f"Procesando archivo '{file_name}' (ID: {file_id})")
@@ -72,42 +69,66 @@ def _process_and_enrich_dataframe(drive_service, file_id: str, file_name: str, c
         # Obtener los metadatos del archivo para saber su tipo
         file_metadata = drive_service.files().get(fileId=file_id, fields='mimeType').execute()
         mime_type = file_metadata.get('mimeType')
+        file_extension = os.path.splitext(file_name)[1].lower()
 
         if mime_type == 'application/vnd.google-apps.spreadsheet':
-            # Es una Hoja de Cálculo de Google, necesitamos exportarla
-            logging.info(f"'{file_name}' es una Hoja de Cálculo de Google. Exportando a formato XLSX...")
+            # Es una Hoja de Cálculo de Google → exportar a XLSX
+            logging.info(f"'{file_name}' es una Hoja de Cálculo de Google. Exportando a XLSX...")
             request = drive_service.files().export_media(
                 fileId=file_id,
-                mimeType='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' # Exportar como .xlsx
+                mimeType='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
             )
-            # Al exportar, siempre usamos el motor 'openpyxl'
-            engine = 'openpyxl'
+            file_bytes = io.BytesIO(request.execute())
+            df = pd.read_excel(
+                file_bytes,
+                skiprows=config.get('skip_rows', 0),
+                skipfooter=config.get('skip_footer', 0),
+                engine='openpyxl'
+            )
+
+        elif mime_type == 'text/csv' or file_extension == '.csv':
+            # Es un archivo CSV
+            logging.info(f"'{file_name}' es un archivo CSV. Leyendo directamente...")
+            request = drive_service.files().get_media(fileId=file_id)
+            csv_bytes = request.execute()
+            csv_string = csv_bytes.decode('utf-8')
+            df = pd.read_csv(
+                io.StringIO(csv_string),
+                skiprows=config.get('skip_rows', 0),
+                skipfooter=config.get('skip_footer', 0),
+                engine='python'  # necesario si usas skipfooter
+            )
+
         else:
-            # Es un archivo binario (probablemente .xls o .xlsx), lo descargamos directamente
+            # Es un archivo binario Excel (.xls o .xlsx)
             logging.info(f"'{file_name}' es un archivo binario ({mime_type}). Descargando...")
-            file_extension = os.path.splitext(file_name)[1].lower()
             if file_extension == '.xlsx':
                 engine = 'openpyxl'
             elif file_extension == '.xls':
                 engine = 'xlrd'
             else:
-                logging.error(f"Formato de archivo binario no soportado para '{file_name}': {file_extension}")
+                logging.error(f"Formato de archivo no soportado: {file_extension} (MIME: {mime_type})")
                 return pd.DataFrame()
+
             request = drive_service.files().get_media(fileId=file_id)
+            file_bytes = io.BytesIO(request.execute())
+            df = pd.read_excel(
+                file_bytes,
+                skiprows=config.get('skip_rows', 0),
+                skipfooter=config.get('skip_footer', 0),
+                engine=engine
+            )
 
-        file_bytes = io.BytesIO(request.execute())
-        
-        df = pd.read_excel(
-            file_bytes,
-            skiprows=config.get('skip_rows', 0),
-            skipfooter=config.get('skip_footer', 0),
-            engine=engine
-        )
     except Exception as e:
-        logging.error(f"Error al leer el archivo Excel '{file_name}' con Pandas: {e}")
+        logging.error(f"Error al leer el archivo '{file_name}': {e}")
         return pd.DataFrame()
+    
+    # --- Aplicar transformaciones específicas del banco si se definen ---
+    if config.get("filter_completed", False) and "State" in df.columns:
+        original_len = len(df)
+        df = df[df["State"] == "COMPLETADO"]
+        logging.info(f"Filtradas {original_len - len(df)} filas no completadas. Quedan {len(df)} válidas.")
 
-    # --- El resto del código continúa exactamente igual ---
     df.rename(columns=config['column_mapping'], inplace=True)
     required_cols = list(config['column_mapping'].values())
     

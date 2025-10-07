@@ -20,7 +20,7 @@
       },
       "date_format": "%d/%m/%Y"
     },
-    "COMMON": {
+    "SHARED": {
       "skip_rows": 8,
       "skip_footer": 0,
       "column_mapping": {

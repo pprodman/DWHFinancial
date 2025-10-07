@@ -19,6 +19,16 @@
         "IMPORTE": "importe"
       },
       "date_format": "%d/%m/%Y"
+    },
+    "COMMON": {
+      "skip_rows": 8,
+      "skip_footer": 0,
+      "column_mapping": {
+        "Fecha valor": "fecha",
+        "Descripción": "concepto",
+        "Importe": "importe"
+      },
+      "date_format": "%d/%m/%Y"
     }
   }
 }

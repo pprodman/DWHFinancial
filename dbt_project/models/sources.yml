@@ -11,3 +11,7 @@ sources:
         description: "Tabla cruda con los movimientos de la cuenta Bankinter."
       - name: bankinter_card
         description: "Tabla cruda con los movimientos de la tarjeta Bankinter."
+      - name: bankinter_shared
+        description: "Tabla cruda con los movimientos de la cuenta compartida Bankinter."
+      - name: revolut_account
+        description: "Tabla cruda con los movimientos de la cuenta Revolut."

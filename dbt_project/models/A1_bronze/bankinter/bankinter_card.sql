@@ -13,7 +13,7 @@ SELECT
     importe,
     entidad,
     origen,
-    FILE_NAME as uri_file
+    _FILE_NAME as uri_file
 FROM {{ source('bronze_raw', 'bankinter_card') }}
 
 {% if is_incremental() %}

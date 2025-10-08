@@ -13,7 +13,7 @@ SELECT
     importe,
     entidad,
     origen,
-    FILE_NAME as uri_file
+    _FILE_NAME as uri_file
 FROM {{ source('bronze_raw', 'revolut_account') }}
 
 {% if is_incremental() %}

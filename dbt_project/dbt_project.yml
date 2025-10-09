@@ -23,12 +23,13 @@ models:
   mi_pipeline_bancario:
     A1_bronze:
       +materialized: incremental
+      +unique_key: hash_id
       +on_schema_change: sync_all_columns
       +schema: bronze_standard
 
     A2_silver:
       +materialized: incremental
-      +unique_key: transaccion_id
+      +unique_key: hash_id
       +schema: silver
 
     A3_gold:

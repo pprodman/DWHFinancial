@@ -6,19 +6,13 @@
   )
 }}
 
-WITH cuenta AS (
-    SELECT * FROM {{ ref('bankinter_account') }}
-    WHERE concepto NOT LIKE '%RECIBO PLATINUM%'
-),
-
-tarjeta AS (
-    SELECT * FROM {{ ref('bankinter_card') }}
+WITH
+cuenta AS (
+    SELECT * FROM {{ ref('revolut_account') }}
 ),
 
 unificado AS (
     SELECT * FROM cuenta
-    UNION ALL
-    SELECT * FROM tarjeta
 )
 
 SELECT

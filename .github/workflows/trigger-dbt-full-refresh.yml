@@ -1,0 +1,49 @@
+name: 'Trigger: dbt Full Refresh'
+
+# Permite que este workflow se ejecute manualmente desde la pestaña "Actions"
+on:
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: 'Motivo para ejecutar el full refresh (ej: nuevos modelos añadidos)'
+        required: true
+        default: 'Mantenimiento manual desde GitHub'
+
+# Variables de entorno consistentes con tu otro workflow
+env:
+  PROJECT_ID: 'dwhfinancial'
+  PUB_SUB_TOPIC: 'run-ingestion-pipeline'
+  DEPLOYER_SERVICE_ACCOUNT: 'github-actions-deployer@dwhfinancial.iam.gserviceaccount.com'
+
+jobs:
+  trigger-job:
+    name: 'Trigger Pub/Sub for Full Refresh'
+    runs-on: ubuntu-latest
+    
+    # Permisos necesarios para la autenticación OIDC con Google Cloud
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+
+    steps:
+      - name: 'Checkout repository'
+        uses: 'actions/checkout@v4'
+
+      - name: 'Authenticate to Google Cloud'
+        # Usamos exactamente la misma configuración de autenticación que ya tienes
+        uses: 'google-github-actions/auth@v2'
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ env.DEPLOYER_SERVICE_ACCOUNT }}
+
+      - name: 'Set up gcloud CLI'
+        uses: 'google-github-actions/setup-gcloud@v2'
+        
+      - name: 'Publish message to trigger dbt full-refresh'
+        run: |
+          echo "Publicando mensaje de full-refresh en el tema '${{ env.PUB_SUB_TOPIC }}'"
+          echo "Razón: ${{ github.event.inputs.reason }}"
+          
+          gcloud pubsub topics publish ${{ env.PUB_SUB_TOPIC }} \
+            --project=${{ env.PROJECT_ID }} \
+            --message='{"full_refresh": true}'

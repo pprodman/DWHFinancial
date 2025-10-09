@@ -12,14 +12,12 @@ SELECT
     concepto,
     importe,
     entidad,
-    origen,
-    _FILE_NAME as uri_file
-FROM {{ source('bronze_raw', 'bankinter_card') }}
+    origen
+FROM {{ source('bronze_raw', 'revolut_account') }}
 
 {% if is_incremental() %}
-  WHERE _FILE_NAME NOT IN (
-    SELECT DISTINCT uri_file
+  WHERE hash_id NOT IN (
+    SELECT hash_id
     FROM {{ this }}
-    WHERE uri_file IS NOT NULL
   )
 {% endif %}

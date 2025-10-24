@@ -4,7 +4,7 @@ IBERDROLA CLIENTES,Iberdrola,4
 DIGI SPAIN TELECOM,Digi,4
 BRIDGE BROKER SL,Bridge Broker,4
 EUROMID LEVANTE,Euromid Levante,4
-SANTANDER CONSUMER,Santander Consumer,4
+SANTANDER CONSUMER,Bauhaus,4
 FINANCIERA EL CORTE ING,Financiera El Corte Inglés,4
 AMAZON WEB SERVICES,Amazon AWS,3
 AWS,Amazon AWS,3
@@ -22,6 +22,7 @@ MIRAVIA.ES,Miravia,5
 MERCADONA,Mercadona,5
 LIDL,Lidl,5
 CONSUM,Consum,5
+MYS Y MAS,Mas y Mas,5
 ALCAMPO,Alcampo,5
 EL CORTE INGLES,El Corte Inglés,5
 El Corte Inglés,El Corte Inglés,5
@@ -117,12 +118,15 @@ AMAZON,Amazon,5
 IKEA,Ikea,5
 Finlux Tech,Kucoin,5
 Paysafe,Binance,5
-SPAR, Spar,5
-Spar, Spar,5
-ALDI, Aldi,5
-Luckia, Luckia,5
-Conversión a TRY, Disney+,5
-GeoVal, GeoVal,5
-FACSA, Facsa,5
-ENDESA, Endesa,5
-GENERALI SEG, Generali Seguros,5
+SPAR,Spar,5
+Spar,Spar,5
+ALDI,Aldi,5
+Luckia,Luckia,5
+Conversión a TRY,Disney+,5
+GeoVal,GeoVal,5
+Geotecnia,GeoVal,5
+FACSA,Facsa,5
+ENDESA,Endesa,5
+AMC,AMC,5
+GENERALI SEG,Generali Seguros,5
+Verificaciones,Verificaciones y Certificaciones,5

@@ -33,7 +33,7 @@ models:
       +schema: silver
 
     A3_gold:
-      +materialized: table
+      +materialized: view
       +tags: ['gold', 'final']
       +schema: gold
 

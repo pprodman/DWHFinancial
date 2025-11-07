@@ -8,17 +8,15 @@
 
 WITH
 cuenta AS (
-    SELECT * FROM {{ ref('bankinter_account') }}
-    WHERE
-        NOT (
-            fecha >= '2024-05-01'
-            AND (UPPER(concepto) LIKE 'TRANSF INTERNA%') -- excluir transferencias internas
-            )
-        AND UPPER(concepto) NOT LIKE '%RECIBO PLATINUM%' -- excluir recibos de tarjeta platinum
+    SELECT *
+    FROM {{ ref('bankinter_account') }}
+    WHERE UPPER(concepto) NOT LIKE 'TRANSF INTERNA%' -- excluir transferencias internas
+    AND UPPER(concepto) NOT LIKE '%RECIBO PLATINUM%' -- excluir recibos de tarjeta platinum
 ),
 
 tarjeta AS (
-    SELECT * FROM {{ ref('bankinter_card') }}
+    SELECT *
+    FROM {{ ref('bankinter_card') }}
 ),
 
 cuenta_comun AS (
@@ -32,7 +30,8 @@ cuenta_comun AS (
     FROM {{ ref('bankinter_shared') }}
     WHERE
         NOT (
-            ABS(importe) BETWEEN 490 AND 510
+            ABS(importe) = 500
+            OR ABS(importe) = 750
             AND UPPER(concepto) LIKE 'TRANS%'
         )
 ),

@@ -33,7 +33,8 @@ models:
       +schema: silver
 
     A3_gold:
-      +materialized: view
+      +materialized: incremental
+      +unique_key: hash_id
       +tags: ['gold', 'final']
       +schema: gold
 

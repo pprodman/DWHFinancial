@@ -8,13 +8,13 @@
 
 -- Paso 1: Unificar todas las fuentes de la capa Bronce en un único CTE.
 WITH all_sources_unioned AS (
-    SELECT * FROM {{ ref('bronze_bankinter_account') }}
+    SELECT * FROM {{ ref('bankinter_account') }}
     UNION ALL
-    SELECT * FROM {{ ref('bronze_bankinter_card') }}
+    SELECT * FROM {{ ref('bankinter_card') }}
     UNION ALL
-    SELECT * FROM {{ ref('bronze_bankinter_shared') }}
+    SELECT * FROM {{ ref('bankinter_shared') }}
     UNION ALL
-    SELECT * FROM {{ ref('bronze_revolut_account') }}
+    SELECT * FROM {{ ref('revolut_account') }}
 ),
 
 -- Paso 2: Limpiar y enriquecer los datos. Aquí es donde aplicamos toda la lógica.

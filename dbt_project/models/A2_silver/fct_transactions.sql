@@ -71,9 +71,9 @@ transactions_with_personal_amount AS (
         -- Lógica de importe personal, ahora súper simple y legible
         CASE
             -- Los traspasos, aportaciones y reembolsos de otros no afectan a tu gasto/ingreso personal
-            WHEN subtipo_transaccion NOT IN ('Gasto/Ingreso Regular', 'Gasto Compartido Especial') THEN 0
+            WHEN subtipo_transaccion NOT IN ('Gasto/Ingreso Regular', 'Gasto Compartido (Visa Clásica)') THEN 0
             -- Para gastos regulares en la cuenta común, es el 50%
-            WHEN origen = 'Shared' AND subtipo_transaccion IN ('Gasto/Ingreso Regular', 'Gasto Compartido Especial') THEN importe * 0.5
+            WHEN origen = 'Shared' AND subtipo_transaccion IN ('Gasto/Ingreso Regular', 'Gasto Compartido (Visa Clásica)') THEN importe * 0.5
             -- Para el resto de cuentas y movimientos, es el 100%
             ELSE importe
         END AS importe_personal
@@ -96,7 +96,7 @@ SELECT
     
     -- Categoría y Comercio (usando las clasificaciones ya hechas)
     CASE
-        WHEN subtipo_transaccion NOT IN ('Gasto/Ingreso Regular', 'Gasto Compartido Especial') THEN 'Movimientos Internos'
+        WHEN subtipo_transaccion NOT IN ('Gasto/Ingreso Regular', 'Gasto Compartido (Visa Clásica)') THEN 'Movimientos Internos'
         ELSE {{ categorize_transaction('concepto', 'importe') }}
     END AS categoria,
     

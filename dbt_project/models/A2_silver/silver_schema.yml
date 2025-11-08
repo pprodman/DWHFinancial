@@ -8,7 +8,7 @@ models:
     columns:
       - name: hash_id
         description: "Identificador único para cada transacción, generado a partir de un hash de los campos originales."
-      - name: fecha_transaccion
+      - name: fecha
         description: "Fecha en la que se realizó la transacción."
       - name: concepto
         description: "Descripción o concepto de la transacción."

@@ -24,7 +24,7 @@ transactions_classified AS (
     SELECT
         -- Campos originales
         hash_id,
-        CAST(fecha AS DATE) AS fecha_transaccion,
+        CAST(fecha AS DATE) AS fecha,
         concepto,
         importe,
         entidad,
@@ -85,7 +85,7 @@ transactions_with_personal_amount AS (
 SELECT
     -- Columnas clave
     hash_id,
-    fecha_transaccion,
+    fecha,
     concepto,
     importe,
     entidad,
@@ -103,9 +103,9 @@ SELECT
     {{ standardize_entity('concepto', 'NULL') }} AS comercio,
     
     -- Campos de fecha
-    EXTRACT(YEAR FROM fecha_transaccion) AS anio,
-    EXTRACT(MONTH FROM fecha_transaccion) AS mes,
-    FORMAT_DATE('%Y-%m', fecha_transaccion) AS anio_mes
+    EXTRACT(YEAR FROM fecha) AS anio,
+    EXTRACT(MONTH FROM fecha) AS mes,
+    FORMAT_DATE('%Y-%m', fecha) AS anio_mes
 
 FROM transactions_with_personal_amount
 

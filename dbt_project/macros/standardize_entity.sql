@@ -1,8 +1,10 @@
+-- macros/standardize_entity.sql
+
 {% macro standardize_entity(concepto_column, fallback_value) %}
     CASE
     {% set entity_mapping_query %}
-        SELECT keyword, entity_name
-        FROM {{ ref('map_entities') }} -- Apuntamos al seed de entidades
+        SELECT keyword, entity_name, priority
+        FROM {{ ref('map_entities') }}
         ORDER BY priority ASC
     {% endset %}
 

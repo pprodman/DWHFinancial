@@ -1,5 +1,3 @@
--- dbt_project/models/A3_gold/transactions.sql
-
 {{
   config(
     materialized = 'incremental',
@@ -34,62 +32,52 @@ lldo_refunds AS (
       AND tipo_movimiento = 'Ingreso'
 ),
 
--- Emparejamos cada reembolso con el gasto más reciente que no se ha compensado completamente
--- Usamos una lógica de "acumulado" para hacer el emparejamiento
-expenses_with_running_total AS (
-    SELECT 
-        *,
-        SUM(ABS(importe)) OVER (PARTITION BY entidad ORDER BY fecha, hash_id ROWS UNBOUNDED PRECEDING) AS running_expense_total
-    FROM shared_expenses
-),
-
-refunds_with_running_total AS (
-    SELECT 
-        *,
-        SUM(importe) OVER (PARTITION BY entidad ORDER BY fecha, hash_id ROWS UNBOUNDED PRECEDING) AS running_refund_total
-    FROM lldo_refunds
-),
-
--- Para cada gasto, calculamos cuánto ha sido compensado
-expenses_with_compensation AS (
+-- Creamos una tabla que empareje cada gasto con reembolsos posteriores
+expense_refund_matches AS (
     SELECT 
         e.*,
-        COALESCE(
-            (SELECT SUM(r.importe) 
-             FROM refunds_with_running_total r 
-             WHERE r.entidad = e.entidad 
-               AND r.fecha >= e.fecha 
-               AND r.running_refund_total <= e.running_expense_total + (SELECT COALESCE(MAX(running_refund_total), 0) FROM refunds_with_running_total r2 WHERE r2.entidad = e.entidad AND r2.fecha < e.fecha)
-            ), 
-            0
-        ) AS total_compensated
-    FROM expenses_with_running_total e
+        r.importe AS refund_amount,
+        r.fecha AS refund_fecha,
+        r.hash_id AS refund_hash_id
+    FROM shared_expenses e
+    LEFT JOIN lldo_refunds r
+        ON e.entidad = r.entidad
+        AND r.fecha >= e.fecha  -- Reembolso después del gasto
+        AND r.importe <= ABS(e.importe)  -- Reembolso menor o igual al gasto
 ),
 
--- Ajustamos el importe_personal para gastos compartidos
-adjusted_shared_expenses AS (
-    SELECT 
-        *,
-        CASE 
-            WHEN ABS(importe) <= total_compensated THEN 0  -- Totalmente compensado
-            ELSE (ABS(importe) - total_compensated) * 0.5  -- Parcialmente compensado
-        END * -1 AS importe_personal_ajustado  -- Negativo porque es gasto
-    FROM expenses_with_compensation
-),
-
--- Para todos los demás registros, mantenemos el importe_personal original
-other_transactions AS (
-    SELECT 
-        *,
-        importe_personal AS importe_personal_ajustado
-    FROM base_transactions
-    WHERE subtipo_transaccion != 'Gasto Compartido (Visa Clásica)'
-),
-
--- Combinamos todos los registros
-final_transactions AS (
+-- Para cada gasto, calculamos el total compensado
+compensation_per_expense AS (
     SELECT 
         hash_id,
+        entidad,
+        importe AS original_expense,
+        SUM(COALESCE(refund_amount, 0)) AS total_compensated
+    FROM expense_refund_matches
+    GROUP BY hash_id, entidad, importe
+),
+
+-- Combinamos con la tabla original para ajustar solo los gastos compartidos
+adjusted_shared_expenses AS (
+    SELECT 
+        b.*,
+        CASE 
+            WHEN b.subtipo_transaccion = 'Gasto Compartido (Visa Clásica)' THEN
+                CASE 
+                    WHEN ABS(b.importe) <= COALESCE(c.total_compensated, 0) THEN 0  -- Totalmente compensado
+                    ELSE (ABS(b.importe) - COALESCE(c.total_compensated, 0)) * 0.5  -- Parcialmente compensado
+                END * -1  -- Negativo porque es gasto
+            ELSE b.importe_personal  -- Para otros casos, mantener el valor original
+        END AS importe_personal_ajustado
+    FROM base_transactions b
+    LEFT JOIN compensation_per_expense c
+        ON b.hash_id = c.hash_id
+),
+
+-- Selección final
+final_transactions AS (
+    SELECT 
+        --hash_id,
         fecha,
         concepto,
         importe,
@@ -104,25 +92,6 @@ final_transactions AS (
         mes,
         anio_mes
     FROM adjusted_shared_expenses
-    
-    UNION ALL
-    
-    SELECT 
-        hash_id,
-        fecha,
-        concepto,
-        importe,
-        entidad,
-        origen,
-        tipo_movimiento,
-        subtipo_transaccion,
-        importe_personal_ajustado AS importe_personal,
-        categoria,
-        comercio,
-        anio,
-        mes,
-        anio_mes
-    FROM other_transactions
 )
 
 SELECT * FROM final_transactions

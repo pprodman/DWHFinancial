@@ -1,5 +1,3 @@
--- dbt_project/models/A3_gold/transactions.sql
-
 {{
   config(
     materialized = 'incremental',
@@ -32,7 +30,7 @@ filtered_base AS (
 -- Ordenamos TODAS las transacciones por fecha y hash_id para secuenciación
 ordered_all AS (
     SELECT *,
-        ROW_NUMBER() OVER (PARTITION BY entidad ORDER BY fecha_transaccion, hash_id) AS rn
+        ROW_NUMBER() OVER (PARTITION BY entidad ORDER BY fecha, hash_id) AS rn
     FROM filtered_base
 ),
 
@@ -46,7 +44,7 @@ with_possible_refunds AS (
         SELECT *, FALSE AS is_new
         FROM {{ this }}
         WHERE UPPER(concepto) LIKE '%LLEDO%' AND importe > 0 AND tipo_movimiento = 'Ingreso'
-          AND fecha_transaccion >= (SELECT DATE_SUB(MAX(fecha_transaccion), INTERVAL 31 DAY) FROM {{ this }})
+          AND fecha >= (SELECT DATE_SUB(MAX(fecha), INTERVAL 31 DAY) FROM {{ this }})
         UNION ALL
         SELECT *, TRUE AS is_new
         FROM ordered_all
@@ -57,11 +55,11 @@ with_possible_refunds AS (
         ARRAY_AGG(
             CASE 
                 WHEN UPPER(concepto) LIKE '%LLEDO%' AND importe > 0 AND tipo_movimiento = 'Ingreso'
-                THEN STRUCT(importe AS refund_amount, fecha_transaccion AS refund_date, hash_id AS refund_hash)
+                THEN STRUCT(importe AS refund_amount, fecha AS refund_date, hash_id AS refund_hash)
             END
         ) OVER (
             PARTITION BY entidad 
-            ORDER BY fecha_transaccion 
+            ORDER BY fecha
             RANGE BETWEEN CURRENT ROW AND INTERVAL 30 DAY FOLLOWING
         ) AS future_refunds_array
     FROM all_relevant_data t
@@ -73,11 +71,11 @@ with_possible_refunds AS (
         ARRAY_AGG(
             CASE 
                 WHEN UPPER(concepto) LIKE '%LLEDO%' AND importe > 0 AND tipo_movimiento = 'Ingreso'
-                THEN STRUCT(importe AS refund_amount, fecha_transaccion AS refund_date, hash_id AS refund_hash)
+                THEN STRUCT(importe AS refund_amount, fecha AS refund_date, hash_id AS refund_hash)
             END
         ) OVER (
             PARTITION BY entidad 
-            ORDER BY fecha_transaccion 
+            ORDER BY fecha
             RANGE BETWEEN CURRENT ROW AND INTERVAL 30 DAY FOLLOWING
         ) AS future_refunds_array
     FROM ordered_all t
@@ -110,7 +108,18 @@ adjusted_transactions AS (
 )
 
 SELECT
-    -- Reemplazamos el importe_personal original por el ajustado
-    * EXCEPT (importe_personal),
-    importe_personal_ajustado AS importe_personal
+    -- Seleccionamos todas las columnas excepto hash_id y importe_personal original
+    fecha,
+    concepto,
+    importe,
+    entidad,
+    origen,
+    tipo_movimiento,
+    subtipo_transaccion,
+    importe_personal_ajustado AS importe_personal,
+    categoria,
+    comercio,
+    anio,
+    mes,
+    anio_mes
 FROM adjusted_transactions

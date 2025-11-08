@@ -1,3 +1,5 @@
+-- dbt_project/models/A3_gold/transactions.sql
+
 {{
   config(
     materialized = 'incremental',

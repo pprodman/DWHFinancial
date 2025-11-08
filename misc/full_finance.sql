@@ -1,3 +1,5 @@
+-- dbt_project/models/A3_gold/full_finance.sql
+
 {{
   config(
     materialized = 'table'

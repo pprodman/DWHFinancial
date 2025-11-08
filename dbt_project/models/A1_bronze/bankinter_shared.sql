@@ -1,3 +1,5 @@
+-- dbt_project/models/A1_bronze/bankinter_shared.sql
+
 {{
   config(
     materialized = 'incremental',

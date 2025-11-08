@@ -1,3 +1,5 @@
+-- dbt_project/models/A3_gold/transactions.sql
+
 {{
   config(
     materialized = 'incremental',
@@ -59,8 +61,8 @@ with_possible_refunds AS (
             END
         ) OVER (
             PARTITION BY entidad 
-            ORDER BY fecha
-            RANGE BETWEEN CURRENT ROW AND INTERVAL 30 DAY FOLLOWING
+            ORDER BY fecha, hash_id
+            ROWS BETWEEN CURRENT ROW AND 30 FOLLOWING  -- ← Cambiado a ROWS
         ) AS future_refunds_array
     FROM all_relevant_data t
     WHERE t.is_new  -- Solo procesamos los nuevos registros
@@ -75,8 +77,8 @@ with_possible_refunds AS (
             END
         ) OVER (
             PARTITION BY entidad 
-            ORDER BY fecha
-            RANGE BETWEEN CURRENT ROW AND INTERVAL 30 DAY FOLLOWING
+            ORDER BY fecha, hash_id
+            ROWS BETWEEN CURRENT ROW AND 30 FOLLOWING  -- ← Cambiado a ROWS
         ) AS future_refunds_array
     FROM ordered_all t
     {% endif %}
@@ -108,7 +110,7 @@ adjusted_transactions AS (
 )
 
 SELECT
-    -- Seleccionamos todas las columnas excepto hash_id y importe_personal original
+    -- Seleccionamos todas las columnas excepto hash_id e importe_personal original
     fecha,
     concepto,
     importe,

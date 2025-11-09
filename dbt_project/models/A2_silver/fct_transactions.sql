@@ -40,8 +40,8 @@ transactions_classified AS (
         -- Clasificación del subtipo de transacción (LA LÓGICA VIVE AQUÍ Y SOLO AQUÍ)
         CASE
             -- 1. Reglas más específicas primero
-            WHEN entidad = 'Bankinter' AND origen = 'Shared' AND UPPER(concepto) LIKE '%PABLO%' AND ABS(importe) IN (500, 750) THEN 'Aportación Periódica'
-            WHEN entidad = 'Bankinter' AND origen = 'Shared' AND UPPER(concepto) LIKE '%LLEDO%' AND ABS(importe) IN (500, 750) THEN 'Aportación Periódica Lledó'
+            WHEN entidad = 'Bankinter' AND origen = 'Shared' AND UPPER(concepto) LIKE '%PABLO%' AND ABS(COALESCE(importe, 0)) IN (500, 750) THEN 'Aportación Periódica'
+            WHEN entidad = 'Bankinter' AND origen = 'Shared' AND UPPER(concepto) LIKE '%LLEDO%' AND ABS(COALESCE(importe, 0)) IN (500, 750) THEN 'Aportación Periódica Lledó'
             
             -- 2. Reglas de traspasos y liquidaciones
             -- Recargas entre tus cuentas (Bankinter <-> Revolut)
@@ -71,7 +71,7 @@ transactions_with_personal_amount AS (
         -- Lógica de importe personal, ahora súper simple y legible
         CASE
             -- Los traspasos, aportaciones y reembolsos de otros no afectan a tu gasto/ingreso personal
-            WHEN subtipo_transaccion NOT IN ('Gasto/Ingreso Regular', 'Gasto Compartido (Visa Clásica)') THEN 0
+            WHEN subtipo_transaccion LIKE '%Traspaso%' OR subtipo_transaccion LIKE '%Aportación%' OR subtipo_transaccion LIKE '%Recarga%' OR subtipo_transaccion LIKE 'Liquidación%' THEN 0
             -- Para gastos regulares en la cuenta común, es el 50%
             WHEN origen = 'Shared' AND subtipo_transaccion IN ('Gasto/Ingreso Regular', 'Gasto Compartido (Visa Clásica)') THEN importe * 0.5
             -- Para el resto de cuentas y movimientos, es el 100%
@@ -94,9 +94,9 @@ SELECT
     subtipo_transaccion,
     importe_personal,
     
-    -- Categoría y Comercio (usando las clasificaciones ya hechas)
+    -- Categoría y Comercio
     CASE
-        WHEN subtipo_transaccion NOT IN ('Gasto/Ingreso Regular', 'Gasto Compartido (Visa Clásica)') THEN 'Movimientos Internos'
+        WHEN subtipo_transaccion NOT LIKE '%Regular' AND subtipo_transaccion NOT LIKE '%Visa Clásica' THEN 'Movimientos Internos'
         ELSE {{ categorize_transaction('concepto', 'importe') }}
     END AS categoria,
     

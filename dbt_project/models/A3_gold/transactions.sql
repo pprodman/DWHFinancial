@@ -1,5 +1,3 @@
--- dbt_project/models/A3_gold/transactions.sql
-
 {{
   config(
     materialized = 'table'
@@ -18,7 +16,13 @@ final AS (
     SELECT
         b.*,
         CASE
-            WHEN a.hash_id IS NOT NULL THEN b.importe_personal - (a.adjustment_amount * 0.5)
+            -- Para gastos Visa Clásica con compensación
+            WHEN b.subtipo_transaccion = 'Gasto Compartido (Visa Clásica)' AND a.hash_id IS NOT NULL 
+                THEN (ABS(b.importe) - a.adjustment_amount) * 0.5 * -1  -- Negativo porque es gasto
+            -- Para gastos Visa Clásica sin compensación
+            WHEN b.subtipo_transaccion = 'Gasto Compartido (Visa Clásica)' 
+                THEN b.importe_personal
+            -- Para otros casos
             ELSE b.importe_personal
         END AS importe_personal_ajustado
     FROM base b
@@ -26,7 +30,6 @@ final AS (
 )
 
 SELECT
-    -- hash_id,  -- No lo incluimos en la salida
     fecha,
     concepto,
     importe,

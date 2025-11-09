@@ -35,7 +35,9 @@ lldo_refunds AS (
 -- Creamos una tabla que empareje cada gasto con reembolsos posteriores
 expense_refund_matches AS (
     SELECT 
-        e.*,
+        e.hash_id,
+        e.entidad,
+        e.importe AS original_expense,
         r.importe AS refund_amount,
         r.fecha AS refund_fecha,
         r.hash_id AS refund_hash_id
@@ -51,10 +53,10 @@ compensation_per_expense AS (
     SELECT 
         hash_id,
         entidad,
-        importe AS original_expense,
+        original_expense,
         SUM(COALESCE(refund_amount, 0)) AS total_compensated
     FROM expense_refund_matches
-    GROUP BY hash_id, entidad, importe
+    GROUP BY hash_id, entidad, original_expense
 ),
 
 -- Combinamos con la tabla original para ajustar solo los gastos compartidos
@@ -77,7 +79,7 @@ adjusted_shared_expenses AS (
 -- Selección final
 final_transactions AS (
     SELECT 
-        --hash_id,
+        hash_id,
         fecha,
         concepto,
         importe,

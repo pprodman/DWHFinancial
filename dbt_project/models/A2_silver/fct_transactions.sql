@@ -55,7 +55,7 @@ transactions_classified AS (
             WHEN entidad = 'Bankinter' AND origen = 'Shared' AND UPPER(concepto) LIKE '%LLEDO%' THEN 'Traspaso Interno Lledó'
 
             -- 3. Reglas para gastos especiales
-            WHEN entidad = 'Bankinter' AND origen = 'Shared' AND UPPER(concepto) LIKE '%RECIBO VISA CLASICA%' THEN 'Gasto Compartido (Visa Clásica)'
+            WHEN entidad = 'Bankinter' AND origen = 'Shared' AND UPPER(concepto) LIKE '%RECIBO VISA CLASICA%' THEN 'Liquidación Tarjeta Compartida'
 
             -- 4. Regla por defecto
             ELSE 'Gasto/Ingreso Regular'
@@ -68,13 +68,9 @@ transactions_classified AS (
 transactions_with_personal_amount AS (
     SELECT
         *,
-        -- Lógica de importe personal, ahora súper simple y legible
         CASE
-            -- Los traspasos, aportaciones y reembolsos de otros no afectan a tu gasto/ingreso personal
-            WHEN subtipo_transaccion LIKE '%Traspaso%' OR subtipo_transaccion LIKE '%Aportación%' OR subtipo_transaccion LIKE '%Recarga%' OR subtipo_transaccion LIKE 'Liquidación%' THEN 0
-            -- Para gastos regulares en la cuenta común, es el 50%
-            WHEN origen = 'Shared' AND subtipo_transaccion IN ('Gasto/Ingreso Regular', 'Gasto Compartido (Visa Clásica)') THEN importe * 0.5
-            -- Para el resto de cuentas y movimientos, es el 100%
+            WHEN subtipo_transaccion NOT IN ('Gasto/Ingreso Regular', 'Liquidación Tarjeta Compartida') THEN 0
+            WHEN origen = 'Shared' AND subtipo_transaccion IN ('Gasto/Ingreso Regular', 'Liquidación Tarjeta Compartida') THEN importe * 0.5
             ELSE importe
         END AS importe_personal
         
@@ -83,7 +79,6 @@ transactions_with_personal_amount AS (
 
 -- Paso 4: Selección final y aplicación de macros
 SELECT
-    -- Columnas clave
     hash_id,
     fecha,
     concepto,
@@ -96,8 +91,8 @@ SELECT
     
     -- Categoría y Comercio
     CASE
-        WHEN subtipo_transaccion NOT LIKE '%Regular' AND subtipo_transaccion NOT LIKE '%Visa Clásica' THEN 'Movimientos Internos'
-        ELSE {{ categorize_transaction('concepto', 'importe') }}
+        WHEN subtipo_transaccion IN ('Gasto/Ingreso Regular', 'Liquidación Tarjeta Compartida') THEN {{ categorize_transaction('concepto', 'importe') }}
+        ELSE 'Movimientos Internos'
     END AS categoria,
     
     {{ standardize_entity('concepto', 'NULL') }} AS comercio,

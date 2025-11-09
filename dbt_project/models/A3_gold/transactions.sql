@@ -1,3 +1,11 @@
+-- dbt_project/models/A3_gold/transactions.sql
+
+{{
+  config(
+    materialized = 'table'
+  )
+}}
+
 WITH base AS (
     SELECT * FROM {{ ref('fct_transactions') }}
 ),
@@ -18,6 +26,7 @@ final AS (
 )
 
 SELECT
+    -- hash_id,  -- No lo incluimos en la salida
     fecha,
     concepto,
     importe,

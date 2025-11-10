@@ -413,7 +413,7 @@ def ingest_bank_statements_pubsub(cloud_event: CloudEvent):
                 account_type = account_folder["name"]
                 try:
                     config = bank_configs[bank_name][account_type]
-                    total_files_processed += (
+                    total_files_processed += process_account_folder(
                         drive_service,
                         account_folder,
                         bank_name,

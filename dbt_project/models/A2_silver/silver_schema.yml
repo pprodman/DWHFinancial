@@ -3,10 +3,10 @@
 version: 2
 
 models:
-  - name: bankinter
-    description: "Tabla que unifica y estandariza las transacciones de Bankinter."
+  - name: fct_transactions  # ← Cambiado de 'bankinter' a 'fct_transactions'
+    description: "Tabla que unifica y estandariza las transacciones de Bankinter y otras fuentes."
     columns:
-      - name: transaccion_id
+      - name: hash_id
         description: "Identificador único para cada transacción, generado a partir de un hash de los campos originales."
       - name: fecha
         description: "Fecha en la que se realizó la transacción."
@@ -20,3 +20,17 @@ models:
         description: "Origen de la transacción."
       - name: tipo_movimiento
         description: "Tipo de movimiento, por ejemplo 'ingreso' o 'gasto'."
+      - name: subtipo_transaccion
+        description: "Subtipo de transacción clasificado."
+      - name: importe_personal
+        description: "Importe ajustado para cálculo personal."
+      - name: categoria
+        description: "Categoría de la transacción."
+      - name: comercio
+        description: "Comercio o entidad de la transacción."
+      - name: anio
+        description: "Año de la transacción."
+      - name: mes
+        description: "Mes de la transacción."
+      - name: anio_mes
+        description: "Año y mes concatenados."

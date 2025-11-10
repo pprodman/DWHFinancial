@@ -1,10 +1,12 @@
+-- macros/categorize_transaction.sql
+
 {% macro categorize_transaction(concepto_column, importe_column, default_gasto='Gasto - Otros', default_ingreso='Ingreso - Otros') %}
 
     CASE
     
     {#- Obtenemos las reglas de mapeo del fichero seed, ordenadas por prioridad -#}
     {% set category_mapping_query %}
-        SELECT keyword, category
+        SELECT keyword, category, priority
         FROM {{ ref('map_categories') }}
         ORDER BY priority ASC
     {% endset %}

@@ -10,6 +10,9 @@ LIQ. PROPIA CTA.,Intereses,1
 TRANSF INTERNA,Traspasos Internos,1
 CUENTA TU Y YO,Traspasos Internos,1
 CAJERO,Retirada Efectivo,2
+CUOTA PTMO,Hipoteca,3
+IMP DISP PT,Hipoteca,3
+IMP INIC PT,Hipoteca,3
 REVOLUT,Traspasos Internos,3
 BNEXT,Traspasos Internos,3
 CAJA,Retirada Efectivo,2
@@ -18,26 +21,38 @@ COINBASE,Inversión,4
 Finlux Tech,Inversión,4
 Paysafe,Inversión,4
 AMAZON PRIME,Suscripciones,5
-RECIBO /JAZZTEL,Hogar y Suministros,5
-RECIBO /IBERDROLA,Hogar y Suministros,5
-RECIBO /DIGI,Hogar y Suministros,5
+JAZZTEL,Hogar y Suministros,5
+IBERDROLA,Hogar y Suministros,5
+DIGI,Hogar y Suministros,5
+ENDESA,Hogar y Suministros,5
+FACSA,Hogar y Suministros,5
 ZURICH,Seguros,5
+GENERALI SEG,Seguros,5
+SEGUROS,Seguros,5
+MAPFRE,Seguros,5
 TRADINGVIEW,Suscripciones,5
 SPOTIFY,Suscripciones,5
 IYZICO,Suscripciones,5
+RESTORE,Obras y Servicios,5
+GeoVal,Obras y Servicios,5
+Geotecnia,Obras y Servicios,5
 Conversión a TRY,Suscripciones,5
 RECIB /SANTANDER CONSUMER,Hogar y Bricolaje,5
 AYUNTAMIENTO,Impuestos y Tasas,5
 COMISIÓN,Comisiones Bancarias,6
+COM APER,Comisiones Bancarias,6
 COM. USO REDES,Comisiones Bancarias,6
+PROVISION,Comisiones Bancarias,6
 COLEGIO DE REGISTRADORES,Impuestos y Tasas,5
 GENERALITAT VALENCIANA,Impuestos y Tasas,5
+GLOVAL VALUATION,Impuestos y Tasas,5
 MERCADONA,Supermercado,10
 CONSUM,Supermercado,10
 ALCAMPO,Supermercado,10
+MAS Y MAS,Supermercado,10
 LIDL,Supermercado,10
 ALDI,Supermercado,10
-SPAR, Supermercado,10
+SPAR,Supermercado,10
 BON AREA,Supermercado,10
 CASH CASTELLON,Supermercado,10
 PANADERIA,Alimentación,11

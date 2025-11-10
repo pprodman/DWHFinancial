@@ -293,7 +293,7 @@ def process_account_folder(
             )
             logging.info(f"Procesando archivo: {file_name} (ID: {file_id})")
 
-            clean_df = (
+            clean_df = transform_dataframe(
                 file_bytes,
                 file_type,
                 file_name,

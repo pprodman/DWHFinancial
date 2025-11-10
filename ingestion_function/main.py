@@ -23,8 +23,8 @@ from cloudevents.http import CloudEvent
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 
 CONFIG_FILE = Path("bank_configs.json")
-PENDING_FOLDER = "pending"
-PROCESSED_FOLDER = "processed"
+PENDING_FOLDER = "PENDING"
+PROCESSED_FOLDER = "PROCESSED"
 IN_PROGRESS_FOLDER = "in_progress"
 
 PROJECT_ID = os.environ.get("GCP_PROJECT")

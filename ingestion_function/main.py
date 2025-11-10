@@ -23,8 +23,8 @@ from cloudevents.http import CloudEvent
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 
 CONFIG_FILE = Path("bank_configs.json")
-PENDING_FOLDER = "pending"
-PROCESSED_FOLDER = "processed"
+PENDING_FOLDER = "PENDING"
+PROCESSED_FOLDER = "PROCESSED"
 IN_PROGRESS_FOLDER = "in_progress"
 
 PROJECT_ID = os.environ.get("GCP_PROJECT")
@@ -293,7 +293,7 @@ def process_account_folder(
             )
             logging.info(f"Procesando archivo: {file_name} (ID: {file_id})")
 
-            clean_df = (
+            clean_df = transform_dataframe(
                 file_bytes,
                 file_type,
                 file_name,
@@ -413,7 +413,7 @@ def ingest_bank_statements_pubsub(cloud_event: CloudEvent):
                 account_type = account_folder["name"]
                 try:
                     config = bank_configs[bank_name][account_type]
-                    total_files_processed += (
+                    total_files_processed += process_account_folder(
                         drive_service,
                         account_folder,
                         bank_name,

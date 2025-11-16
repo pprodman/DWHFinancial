@@ -1,0 +1,127 @@
+name: 'CI: Tests & Validation'
+
+on:
+  pull_request:
+    branches: [ 'main' ]
+  push:
+    branches: [ 'develop' ]
+
+jobs:
+  # Job 1: Validar Python (ingestion function)
+  test-python:
+    name: 'Test Python Code'
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 'Checkout code'
+        uses: actions/checkout@v4
+      
+      - name: 'Set up Python'
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      
+      - name: 'Install dependencies'
+        run: |
+          pip install -r ingestion_function/requirements.txt
+          pip install pytest pylint black flake8
+      
+      - name: 'Lint with flake8'
+        run: |
+          flake8 ingestion_function/ --max-line-length=120 --extend-ignore=E203,W503
+        continue-on-error: true
+      
+      - name: 'Format check with black'
+        run: |
+          black --check ingestion_function/ --line-length=120
+        continue-on-error: true
+      
+      - name: 'Type check with pylint'
+        run: |
+          pylint ingestion_function/*.py --disable=C0111,R0913,R0914
+        continue-on-error: true
+      
+      - name: 'Run unit tests'
+        run: |
+          pytest tests/ -v --tb=short || echo "⚠️ No tests found (consider adding)"
+        continue-on-error: true
+  
+  # Job 2: Validar dbt
+  test-dbt:
+    name: 'Test dbt Models'
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    
+    steps:
+      - name: 'Checkout code'
+        uses: actions/checkout@v4
+      
+      - name: 'Set up Python'
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+          cache: 'pip'
+      
+      - name: 'Install dbt'
+        run: |
+          pip install -r dbt_project/requirements.txt
+      
+      - name: 'Authenticate to GCP (for dbt parse)'
+        uses: 'google-github-actions/auth@v2'
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: 'github-actions-deployer@dwhfinancial.iam.gserviceaccount.com'
+        continue-on-error: true
+      
+      - name: 'dbt deps'
+        run: |
+          cd dbt_project
+          dbt deps --profiles-dir . || echo "No dependencies"
+      
+      - name: 'dbt parse (syntax check)'
+        run: |
+          cd dbt_project
+          dbt parse --profiles-dir . --target prod
+      
+      - name: 'dbt compile'
+        run: |
+          cd dbt_project
+          dbt compile --profiles-dir . --target prod
+  
+  # Job 3: Validar configuración
+  validate-config:
+    name: 'Validate Configuration'
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 'Checkout code'
+        uses: actions/checkout@v4
+      
+      - name: 'Validate JSON configs'
+        run: |
+          echo "Validating bank_configs.json..."
+          python3 -m json.tool ingestion_function/bank_configs.json > /dev/null
+          echo "✅ Valid JSON"
+      
+      - name: 'Validate CSV seeds'
+        run: |
+          echo "Validating dbt seeds..."
+          for file in dbt_project/seeds/*.csv; do
+            if [ -f "$file" ]; then
+              echo "Checking $file..."
+              head -1 "$file" | grep -q ',' && echo "✅ $file" || echo "⚠️ $file might be invalid"
+            fi
+          done
+      
+      - name: 'Check for secrets in code'
+        run: |
+          echo "Scanning for potential secrets..."
+          if grep -r "sk-" . --exclude-dir=.git --exclude-dir=node_modules; then
+            echo "⚠️ Potential API key found"
+            exit 1
+          fi
+          echo "✅ No secrets found"

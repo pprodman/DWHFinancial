@@ -26,12 +26,18 @@ jobs:
     if: ${{ inputs.deploy_ingestion }}
     uses: ./.github/workflows/deploy-ingestion.yml
     secrets: inherit
+    permissions:
+      contents: read
+      id-token: write
   
   deploy-dbt:
     name: 'Deploy dbt'
     if: ${{ inputs.deploy_dbt }}
     uses: ./.github/workflows/deploy-dbt.yml
     secrets: inherit
+    permissions:
+      contents: read
+      id-token: write
   
   deploy-trigger:
     name: 'Deploy Trigger'
@@ -39,6 +45,9 @@ jobs:
     needs: deploy-dbt
     uses: ./.github/workflows/deploy-trigger.yml
     secrets: inherit
+    permissions:
+      contents: read
+      id-token: write
   
   run-pipeline:
     name: 'Execute Pipeline'
@@ -46,3 +55,6 @@ jobs:
     needs: [deploy-ingestion, deploy-dbt, deploy-trigger]
     uses: ./.github/workflows/run-pipeline.yml
     secrets: inherit
+    permissions:
+      contents: read
+      id-token: write

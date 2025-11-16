@@ -13,6 +13,17 @@ on:
         required: false
         default: 'Manual execution from GitHub Actions'
   workflow_call:
+    inputs:
+      full_refresh:
+        description: 'Run dbt with --full-refresh'
+        type: boolean
+        default: false
+        required: false
+      reason:
+        description: 'Reason for manual run'
+        type: string
+        required: false
+        default: 'Triggered by another workflow'
 
 env:
   PROJECT_ID: 'dwhfinancial'

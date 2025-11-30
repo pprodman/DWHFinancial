@@ -1,9 +1,5 @@
-# Framework para ejecutar la función
-functions-framework
-
 # Librerías de Google Cloud
 google-cloud-storage
-google-cloud-secret-manager
 google-api-python-client
 google-auth
 
@@ -11,4 +7,4 @@ google-auth
 pandas
 openpyxl
 xlrd==2.0.1
-google-cloud-run==0.11.0
+dbt-bigquery

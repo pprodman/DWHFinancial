@@ -3,8 +3,8 @@ mi_pipeline_bancario:
   outputs:
     prod:
       type: bigquery
-      method: oauth  # o service-account en producción
+      method: service-account
       project: dwhfinancial
       schema: bronze_standard
+      keyfile: /tmp/gcp_key.json
       threads: 4
-      retries: 1

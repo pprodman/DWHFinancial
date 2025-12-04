@@ -9,20 +9,25 @@ from typing import Dict, Any
 import pandas as pd
 from google.cloud import storage
 from googleapiclient.discovery import build, Resource
-from googleapiclient.errors import HttpError
 from google.oauth2 import service_account
+from dotenv import load_dotenv  # <--- NUEVO: Carga variables del .env
 
-# --- Configuración y Constantes ---
+# --- 1. Configuración Inicial ---
+# Cargar variables de entorno desde .env si existe (para desarrollo local)
+load_dotenv()
+
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 
-CONFIG_FILE = Path("ingestion_function/bank_configs.json") # Ajusta ruta si es necesario
-if not CONFIG_FILE.exists(): CONFIG_FILE = Path("bank_configs.json")
+# OPTIMIZACIÓN: La ruta ahora es relativa a ESTE archivo, no a desde dónde ejecutas el comando.
+# Esto evita errores de "File not found" al ejecutar desde la raíz o desde la subcarpeta.
+BASE_DIR = Path(__file__).parent
+CONFIG_FILE = BASE_DIR / "bank_configs.json"
 
 PENDING_FOLDER = "PENDING"
 PROCESSED_FOLDER = "PROCESSED"
 IN_PROGRESS_FOLDER = "in_progress"
 
-# Variables de Entorno (Vienen de GitHub Actions)
+# Variables (ahora se cargan automáticamente del .env en local o de los Secrets en GitHub)
 PROJECT_ID = os.environ.get("GCP_PROJECT_ID")
 GCS_BUCKET_NAME = os.environ.get("GCS_BUCKET_NAME")
 DRIVE_PARENT_FOLDER_ID = os.environ.get("DRIVE_PARENT_FOLDER_ID")
@@ -178,29 +183,56 @@ def process_account_folder(drive_service, account_folder, bank_name, config) -> 
 
 # --- MAIN ---
 if __name__ == "__main__":
-    logging.info("🚀 Iniciando Ingesta (GitHub Actions -> Drive -> GCS)")
-    
-    # Autenticación vía Variable de Entorno (GitHub Secret)
-    creds = service_account.Credentials.from_service_account_file(
-        os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"),
-        scopes=["https://www.googleapis.com/auth/drive", "https://www.googleapis.com/auth/cloud-platform"]
-    )
-    
-    drive = build("drive", "v3", credentials=creds)
-    configs = load_configs()
-    
-    q_banks = f"'{DRIVE_PARENT_FOLDER_ID}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false"
-    banks = drive.files().list(q=q_banks, fields="files(id, name)").execute().get("files", [])
+    logging.info("🚀 Iniciando Ingesta v2 (Soporte Local + Cloud)")
 
-    total = 0
-    for b in banks:
-        bname = b["name"]
-        q_acc = f"'{b['id']}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false"
-        accs = drive.files().list(q=q_acc, fields="files(id, name)").execute().get("files", [])
-        
-        for acc in accs:
-            aname = acc["name"]
-            if bname in configs and aname in configs[bname]:
-                total += process_account_folder(drive, acc, bname, configs[bname][aname])
+    # Validación básica
+    if not all([PROJECT_ID, GCS_BUCKET_NAME, DRIVE_PARENT_FOLDER_ID]):
+        logging.error("❌ Faltan variables de entorno críticas. Revisa tu .env o los secretos.")
+        exit(1)
 
-    logging.info(f"✅ Proceso finalizado. Total archivos procesados: {total}")
+    try:
+        # Cliente GCS
+        storage_client = storage.Client()
+
+        # Autenticación Drive
+        creds_path = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
+        if creds_path and os.path.exists(creds_path):
+            logging.info(f"🔑 Usando credenciales de: {creds_path}")
+            creds = service_account.Credentials.from_service_account_file(
+                creds_path,
+                scopes=["https://www.googleapis.com/auth/drive", "https://www.googleapis.com/auth/cloud-platform"]
+            )
+        else:
+            # Fallback para cuando corre en entornos que ya tienen la identidad inyectada (ej. Cloud Functions)
+            logging.info("🔑 Usando credenciales por defecto del entorno (ADC)")
+            creds, _ = google.auth.default(scopes=["https://www.googleapis.com/auth/drive", "https://www.googleapis.com/auth/cloud-platform"])
+
+        drive = build("drive", "v3", credentials=creds)
+
+        # Carga de configs
+        if not CONFIG_FILE.exists():
+            logging.critical(f"❌ No encuentro el config en: {CONFIG_FILE}")
+            exit(1)
+
+        with open(CONFIG_FILE, "r", encoding="utf-8") as f:
+            configs = json.load(f)
+
+        # --- Lógica de iteración (Idéntica a tu original) ---
+        q_banks = f"'{DRIVE_PARENT_FOLDER_ID}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false"
+        banks = drive.files().list(q=q_banks, fields="files(id, name)").execute().get("files", [])
+
+        total = 0
+        for b in banks:
+            bname = b["name"]
+            q_acc = f"'{b['id']}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false"
+            accs = drive.files().list(q=q_acc, fields="files(id, name)").execute().get("files", [])
+
+            for acc in accs:
+                aname = acc["name"]
+                if bname in configs and aname in configs[bname]:
+                    total += process_account_folder(drive, acc, bname, configs[bname][aname]) # Asegúrate de tener esta función definida arriba
+
+        logging.info(f"✅ Proceso finalizado. Total archivos procesados: {total}")
+
+    except Exception as e:
+        logging.exception("🔥 Error fatal en la ejecución:")

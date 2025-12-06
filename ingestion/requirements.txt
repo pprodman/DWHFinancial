@@ -8,3 +8,6 @@ pandas
 openpyxl
 xlrd==2.0.1
 dbt-bigquery
+
+# Librerías de Utilidad
+python-dotenv

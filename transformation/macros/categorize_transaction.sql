@@ -1,11 +1,6 @@
 {% macro categorize_transaction(concepto_column) %}
 
     CASE
-    {#-
-      1. Cargamos las reglas del seed 'master_mapping'.
-      2. PRE-PROCESAMIENTO: Limpiamos la keyword en la propia query de carga.
-         Usamos NORMALIZE y REGEXP_REPLACE para quitar tildes (Á -> A) en el lado de la regla.
-    -#}
     {% set mapping_query %}
         SELECT
             -- Limpieza profunda de la palabra clave (Upper + Sin Tildes)

@@ -15,7 +15,6 @@ WITH all_sources_unioned AS (
     SELECT * FROM {{ ref('bankinter_shared') }}
     UNION ALL
     SELECT * FROM {{ ref('revolut_account') }}
-    -- Asegúrate de que este modelo existe en A1_bronze
     UNION ALL
     SELECT * FROM {{ ref('cash') }}
 ),

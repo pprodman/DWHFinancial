@@ -11,7 +11,7 @@ google-auth
 
 # --- Transformation (dbt) ---
 dbt-core
-dbt-bigquery==1.10.2
+dbt-bigquery>=1.10.0
 
 # --- Calidad de Código y Utilidades (Opcional pero recomendado para optimizar) ---
 black      # Para formatear código Python automáticamente

@@ -1,5 +1,3 @@
-# dbt_project.yml
-
 name: 'mi_pipeline_bancario'
 version: '1.0.0'
 config-version: 2
@@ -18,7 +16,7 @@ clean-targets:
   - "target"
   - "dbt_packages"
 
-# Configuración por carpeta — ¡Cada capa escribe en su propio dataset!
+# Configuración de modelos
 models:
   mi_pipeline_bancario:
     A1_bronze:
@@ -37,8 +35,6 @@ models:
       +tags: ['gold', 'final']
       +schema: gold
 
-# Configuración para los seeds
 seeds:
   mi_pipeline_bancario:
-    # Todos los seeds se materializarán en el dataset 'mappings'
     +schema: mappings

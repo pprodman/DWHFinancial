@@ -1,2 +1,2 @@
 # Fija la versión para asegurar builds reproducibles y estables
-dbt-bigquery==1.10.2
+dbt-bigquery>=1.10.0

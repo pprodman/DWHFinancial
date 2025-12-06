@@ -3,7 +3,7 @@
 {% macro categorize_transaction(concepto_column, importe_column, default_gasto='Gasto - Otros', default_ingreso='Ingreso - Otros') %}
 
     CASE
-    
+
     {#- Obtenemos las reglas de mapeo del fichero seed, ordenadas por prioridad -#}
     {% set category_mapping_query %}
         SELECT keyword, category, priority
@@ -27,7 +27,7 @@
             WHEN {{ importe_column }} < 0 THEN '{{ default_gasto }}'
             ELSE '{{ default_ingreso }}'
         END
-    
+
     END
 
 {% endmacro %}

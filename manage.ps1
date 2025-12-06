@@ -1,132 +1,71 @@
 <#
 .SYNOPSIS
-    Script de automatización para DWH Financial (Equivalente a Makefile para Windows)
+    Gestor de Proyecto DWH Financial (Modo Híbrido)
+.DESCRIPTION
+    Script para gestionar las tareas locales de Python.
+    Las tareas de transformación (dbt) se gestionan ahora en dbt Cloud.
 .EXAMPLE
-    .\manage.ps1 setup
-    .\manage.ps1 run-dev
+    .\scripts\manage.ps1 install
+    .\scripts\manage.ps1 run-ingestion
 #>
 
 param (
     [Parameter(Mandatory=$false)]
-    [ValidateSet("setup", "install", "test-dbt", "run-dev", "docs", "clean", "help")]
+    [ValidateSet("install", "run-ingestion", "clean", "help")]
     [string]$Command = "help"
 )
 
-$VenvDir = Join-Path $PSScriptRoot ".venv"
-$PythonExe = Join-Path $VenvDir "Scripts\python.exe"
-$DbtExe = Join-Path $VenvDir "Scripts\dbt.exe"
-
-$IngestionDir = Join-Path $PSScriptRoot "ingestion"
-$TransformationDir = Join-Path $PSScriptRoot "transformation"
+# Definimos rutas relativas a la raíz del proyecto
+# PSScriptRoot es la carpeta 'scripts/', así que subimos un nivel.
+$RootPath = Resolve-Path "$PSScriptRoot\.."
+$IngestionDir = Join-Path $RootPath "ingestion"
+$VenvPython = Join-Path $RootPath ".venv\Scripts\python.exe"
+# Nota: Si usas Conda, el script usará el python activo en la terminal, lo cual es preferible.
 
 function Show-Help {
-    Write-Host "Comandos disponibles:" -ForegroundColor Cyan
-    Write-Host "  .\manage.ps1 setup       - Setup inicial (crear venv e instalar todo)"
-    Write-Host "  .\manage.ps1 install     - Reinstalar dependencias"
-    Write-Host "  .\manage.ps1 test-dbt    - Ejecutar tests de dbt"
-    Write-Host "  .\manage.ps1 run-dev     - Ejecutar pipeline completo (Ingesta + dbt)"
-    Write-Host "  .\manage.ps1 docs        - Generar y servir documentación"
-    Write-Host "  .\manage.ps1 clean       - Limpiar archivos temporales"
+    Write-Host "--- 🏦 DWH Financial Manager (Hybrid Edition) ---" -ForegroundColor Cyan
+    Write-Host "  install         - Instala las dependencias de Python (pandas, google, etc.)"
+    Write-Host "  run-ingestion   - Ejecuta el proceso de descarga de Drive y subida a GCS"
+    Write-Host "  clean           - Limpia archivos temporales y cachés"
+    Write-Host ""
+    Write-Host "  Nota: Para ejecutar dbt, usa la interfaz web de dbt Cloud." -ForegroundColor DarkGray
 }
 
 if ($Command -eq "help") { Show-Help; exit }
 
-# --- SETUP ---
-if ($Command -eq "setup") {
-    Write-Host "🚀 Iniciando Setup..." -ForegroundColor Green
-    if (-not (Test-Path $VenvDir)) {
-        Write-Host "Creando entorno virtual..."
-        python -m venv $VenvDir
-    }
-    # Actualizar pip
-    & $PythonExe -m pip install --upgrade pip
-    # Ir al paso de instalación
-    & $MyInvocation.MyCommand.Path install
-}
-
 # --- INSTALL ---
 if ($Command -eq "install") {
-    Write-Host "📦 Instalando dependencias..." -ForegroundColor Green
-    
-    # Opción A: Si usas el requirements.txt unificado en la raíz (Recomendado en v2)
-    if (Test-Path "requirements.txt") {
-        & $PythonExe -m pip install -r requirements.txt
-    }
-    # Opción B: Si prefieres instalar por módulos (como en tu Makefile antiguo)
-    else {
-        if (Test-Path "$IngestionDir\requirements.txt") { & $PythonExe -m pip install -r "$IngestionDir\requirements.txt" }
-        if (Test-Path "$TransformationDir\requirements.txt") { & $PythonExe -m pip install -r "$TransformationDir\requirements.txt" }
-    }
-
-    # Instalar dependencias de dbt
-    Write-Host "Bajando paquetes de dbt..."
-    Push-Location $TransformationDir
-    try {
-        & $DbtExe deps
-    } finally {
-        Pop-Location
-    }
+    Write-Host "📦 Instalando dependencias de Ingestión..." -ForegroundColor Green
+    # Usamos pip directamente, asumiendo que el entorno (Conda) ya está activo en VS Code
+    pip install -r "$IngestionDir\requirements.txt"
+    if ($LASTEXITCODE -eq 0) { Write-Host "✅ Instalación completada." -ForegroundColor Green }
 }
 
-# --- TEST DBT ---
-if ($Command -eq "test-dbt") {
-    Write-Host "🧪 Ejecutando tests..." -ForegroundColor Green
-    Push-Location $TransformationDir
-    try {
-        & $DbtExe test --target dev --profiles-dir .
-    } finally {
-        Pop-Location
-    }
-}
+# --- RUN INGESTION ---
+if ($Command -eq "run-ingestion") {
+    Write-Host "🚀 Iniciando Pipeline de Ingestión..." -ForegroundColor Green
 
-# --- RUN DEV ---
-if ($Command -eq "run-dev") {
-    Write-Host "▶️  Ejecutando Pipeline en DEV..." -ForegroundColor Green
-    
-    # 1. Ingesta
-    Write-Host "[1/2] Ejecutando Ingesta..." -ForegroundColor Yellow
-    # Aseguramos que las variables de entorno del .env estén cargadas para python
-    & $PythonExe "$IngestionDir\main.py"
-    
-    if ($LASTEXITCODE -ne 0) { Write-Error "Fallo en la ingesta"; exit 1 }
-
-    # 2. Transformación
-    Write-Host "[2/2] Ejecutando Transformación (dbt)..." -ForegroundColor Yellow
-    Push-Location $TransformationDir
-    try {
-        & $DbtExe seed --target dev --profiles-dir .
-        & $DbtExe run --target dev --profiles-dir .
-    } finally {
-        Pop-Location
+    # Comprobar si existe .env
+    if (-not (Test-Path "$RootPath\.env")) {
+        Write-Warning "⚠️ No detecto el archivo .env en la raíz ($RootPath). El script podría fallar si no hay variables de entorno."
     }
-}
 
-# --- DOCS ---
-if ($Command -eq "docs") {
-    Write-Host "📚 Generando documentación..." -ForegroundColor Green
-    Push-Location $TransformationDir
-    try {
-        & $DbtExe docs generate --target dev --profiles-dir .
-        & $DbtExe docs serve --profiles-dir .
-    } finally {
-        Pop-Location
-    }
+    $ScriptPath = Join-Path $IngestionDir "main.py"
+
+    # Ejecutamos Python
+    python $ScriptPath
 }
 
 # --- CLEAN ---
 if ($Command -eq "clean") {
-    Write-Host "🧹 Limpiando..." -ForegroundColor Green
-    # Borrar carpetas de dbt
-    $PathsToRemove = @(
-        "$TransformationDir\target",
-        "$TransformationDir\dbt_packages",
-        "$TransformationDir\logs"
-    )
-    foreach ($Path in $PathsToRemove) {
-        if (Test-Path $Path) { Remove-Item -Path $Path -Recurse -Force; Write-Host "Borrado: $Path" }
-    }
-    
-    # Borrar pycache
-    Get-ChildItem -Recurse -Filter "__pycache__" | Remove-Item -Recurse -Force
-    Write-Host "Limpieza completada."
+    Write-Host "🧹 Limpiando archivos temporales..." -ForegroundColor Green
+
+    # Borrar __pycache__ y .pyc recursivamente
+    Get-ChildItem -Path $RootPath -Recurse -Include "__pycache__", "*.pyc", ".pytest_cache" | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
+
+    # Borrar logs locales de dbt (si quedaron)
+    if (Test-Path "$RootPath\transformation\logs") { Remove-Item "$RootPath\transformation\logs" -Recurse -Force }
+    if (Test-Path "$RootPath\transformation\target") { Remove-Item "$RootPath\transformation\target" -Recurse -Force }
+
+    Write-Host "✨ Limpieza finalizada." -ForegroundColor Green
 }

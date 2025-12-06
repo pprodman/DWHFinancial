@@ -18,6 +18,7 @@ transformation/logs/
 .idea/
 
 # Secretos y Credenciales (¡MUY IMPORTANTE!)
+/auth
 *.json
 *.key
 .env

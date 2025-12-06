@@ -1,5 +1,3 @@
--- dbt_project/models/A1_bronze/bankinter_card.sql
-
 {{
   config(
     materialized = 'incremental',

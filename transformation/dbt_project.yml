@@ -19,6 +19,11 @@ clean-targets:
 # Configuración de modelos
 models:
   mi_pipeline_bancario:
+    # --- ACTIVAR PERSISTENCIA DE DOCUMENTACIÓN (GLOBAL) ---
+    +persist_docs:
+      relation: true   # Descripción de la tabla
+      columns: true    # Descripción de cada columna
+
     A1_bronze:
       +materialized: incremental
       +unique_key: hash_id

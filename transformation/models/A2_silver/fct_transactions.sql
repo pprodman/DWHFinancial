@@ -17,6 +17,8 @@ WITH all_sources_unioned AS (
     SELECT * FROM {{ ref('bankinter_shared') }}
     UNION ALL
     SELECT * FROM {{ ref('revolut_account') }}
+    UNION ALL
+    SELECT * FROM {{ ref('cash') }}
 ),
 
 -- Paso 2: Clasificar cada transacción UNA SOLA VEZ.
@@ -36,13 +38,13 @@ transactions_classified AS (
             WHEN importe < 0 THEN 'Gasto'
             ELSE 'Neutro'
         END AS tipo_movimiento,
-        
+
         -- Clasificación del subtipo de transacción (LA LÓGICA VIVE AQUÍ Y SOLO AQUÍ)
         CASE
             -- 1. Reglas más específicas primero
             WHEN entidad = 'Bankinter' AND origen = 'Shared' AND UPPER(concepto) LIKE '%PABLO%' AND ABS(COALESCE(importe, 0)) IN (500, 750) THEN 'Aportación Periódica'
             WHEN entidad = 'Bankinter' AND origen = 'Shared' AND UPPER(concepto) LIKE '%LLEDO%' AND ABS(COALESCE(importe, 0)) IN (500, 750) THEN 'Aportación Periódica Lledó'
-            
+
             -- 2. Reglas de traspasos y liquidaciones
             -- Recargas entre tus cuentas (Bankinter <-> Revolut)
             WHEN entidad = 'Bankinter' AND origen = 'Account' AND UPPER(concepto) LIKE '%REVOLUT%' THEN 'Recarga Revolut'
@@ -60,7 +62,7 @@ transactions_classified AS (
             -- 4. Regla por defecto
             ELSE 'Gasto/Ingreso Regular'
         END AS subtipo_transaccion
-        
+
     FROM all_sources_unioned
 ),
 
@@ -73,7 +75,7 @@ transactions_with_personal_amount AS (
             WHEN origen = 'Shared' AND subtipo_transaccion IN ('Gasto/Ingreso Regular', 'Liquidación Tarjeta Compartida') THEN importe * 0.5
             ELSE importe
         END AS importe_personal
-        
+
     FROM transactions_classified
 )
 
@@ -88,15 +90,15 @@ SELECT
     tipo_movimiento,
     subtipo_transaccion,
     importe_personal,
-    
+
     -- Categoría y Comercio
     CASE
         WHEN subtipo_transaccion IN ('Gasto/Ingreso Regular', 'Liquidación Tarjeta Compartida') THEN {{ categorize_transaction('concepto', 'importe') }}
         ELSE 'Movimientos Internos'
     END AS categoria,
-    
+
     {{ standardize_entity('concepto', 'NULL') }} AS comercio,
-    
+
     -- Campos de fecha
     EXTRACT(YEAR FROM fecha) AS anio,
     EXTRACT(MONTH FROM fecha) AS mes,

@@ -8,7 +8,7 @@ models:
     description: "Tabla normalizada de movimientos de la cuenta corriente personal en Bankinter. Contiene transferencias, recibos y movimientos de efectivo."
     columns:
       - name: hash_id
-        description: "Clave Primaria (PK). Hash SHA256 único generado durante la ingestión (Python) concatenando Fecha + Concepto + Importe para garantizar idempotencia."
+        description: "Clave Primaria (PK). Hash SHA256 único."
         tests:
           - unique
           - not_null
@@ -19,9 +19,10 @@ models:
       - name: importe
         description: "Monto de la transacción. Valores negativos (-) indican gastos, valores positivos (+) indican ingresos."
       - name: entidad
-        description: "Nombre de la entidad bancaria normalizada (Ej: 'Bankinter')."
+        description: "Nombre de la entidad bancaria."
       - name: origen
-        description: "Origen del dato o tipo de producto (Ej: 'Account')."
+        description: "Origen de la transacción."
+
 
   # -----------------------------------------------------------------------------
   # 2. TARJETA DE CRÉDITO BANKINTER (Personal)
@@ -35,15 +36,15 @@ models:
           - unique
           - not_null
       - name: fecha
-        description: "Fecha de la compra o transacción."
+        description: "Fecha valor de la transacción (Formato YYYY-MM-DD)."
       - name: concepto
-        description: "Nombre del comercio o detalle de la compra."
+        description: "Descripción original del movimiento bancario tal como aparece en el extracto."
       - name: importe
-        description: "Monto de la compra (generalmente negativo)."
+        description: "Monto de la transacción. Valores negativos (-) indican gastos, valores positivos (+) indican ingresos."
       - name: entidad
-        description: "Entidad emisora (Ej: 'Bankinter')."
+        description: "Nombre de la entidad bancaria."
       - name: origen
-        description: "Origen del dato (Ej: 'Card')."
+        description: "Origen de la transacción."
 
   # -----------------------------------------------------------------------------
   # 3. CUENTA COMPARTIDA BANKINTER (Gastos Comunes)
@@ -57,15 +58,15 @@ models:
           - unique
           - not_null
       - name: fecha
-        description: "Fecha valor de la transacción."
+        description: "Fecha valor de la transacción (Formato YYYY-MM-DD)."
       - name: concepto
-        description: "Descripción del movimiento."
+        description: "Descripción original del movimiento bancario tal como aparece en el extracto."
       - name: importe
-        description: "Monto de la transacción."
+        description: "Monto de la transacción. Valores negativos (-) indican gastos, valores positivos (+) indican ingresos."
       - name: entidad
-        description: "Entidad bancaria (Ej: 'Bankinter')."
+        description: "Nombre de la entidad bancaria."
       - name: origen
-        description: "Origen del dato. Debe ser siempre 'Shared' para activar la lógica de reparto de gastos."
+        description: "Origen de la transacción."
 
   # -----------------------------------------------------------------------------
   # 4. CUENTA REVOLUT (Multidivisa / Viajes)
@@ -79,15 +80,15 @@ models:
           - unique
           - not_null
       - name: fecha
-        description: "Fecha de la transacción."
+        description: "Fecha valor de la transacción (Formato YYYY-MM-DD)."
       - name: concepto
-        description: "Descripción o comercio (suelen ser nombres limpios de comercios)."
+        description: "Descripción original del movimiento bancario tal como aparece en el extracto."
       - name: importe
-        description: "Monto de la transacción en la moneda base (EUR)."
+        description: "Monto de la transacción. Valores negativos (-) indican gastos, valores positivos (+) indican ingresos."
       - name: entidad
-        description: "Entidad financiera (Ej: 'Revolut')."
+        description: "Nombre de la entidad bancaria."
       - name: origen
-        description: "Origen del dato (Ej: 'Account')."
+        description: "Origen de la transacción."
 
   # -----------------------------------------------------------------------------
   # 5. GASTOS EN EFECTIVO (Manual - Google Sheets)
@@ -96,16 +97,16 @@ models:
     description: "Tabla de gastos realizados en efectivo, alimentada manualmente desde una Google Sheet externa."
     columns:
       - name: hash_id
-        description: "PK. Hash SHA256 generado en SQL para mantener consistencia con el resto de tablas."
+        description: "Clave Primaria (PK). Hash SHA256 único."
         tests:
           - unique
           - not_null
       - name: fecha
-        description: "Fecha del gasto."
+        description: "Fecha valor de la transacción (Formato YYYY-MM-DD)."
       - name: concepto
-        description: "Detalle del gasto escrito manualmente."
+        description: "Descripción del movimiento."
       - name: importe
-        description: "Monto gastado (debe ser negativo para gastos)."
+        description: "Monto de la transacción. Valores negativos (-) indican gastos, valores positivos (+) indican ingresos."
         tests:
           - not_null
       - name: entidad

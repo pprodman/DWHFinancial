@@ -2,30 +2,33 @@
 
     CASE
     {#-
-      1. Leemos del nuevo seed unificado 'master_mapping'.
-      2. Ordenamos por prioridad ASC (1 es más importante que 50).
-      3. Importante: Usamos los nombres de columna exactos de tu CSV (grupo_categoria, etc).
+      1. Cargamos las reglas del seed 'master_mapping'.
+      2. PRE-PROCESAMIENTO: Limpiamos la keyword en la propia query de carga.
+         Usamos NORMALIZE y REGEXP_REPLACE para quitar tildes (Á -> A) en el lado de la regla.
     -#}
     {% set mapping_query %}
-        SELECT keyword, grupo_categoria, categoria, subcategoria, entity_name, priority
+        SELECT
+            -- Limpieza profunda de la palabra clave (Upper + Sin Tildes)
+            REGEXP_REPLACE(NORMALIZE(UPPER(keyword), NFD), r'\pM', '') as clean_keyword,
+            grupo_categoria,
+            categoria,
+            subcategoria,
+            entity_name,
+            priority
         FROM {{ ref('master_mapping') }}
         ORDER BY priority ASC
     {% endset %}
 
-    {#- Ejecutamos la query para cargar las reglas en memoria -#}
     {% set mappings = run_query(mapping_query) %}
 
     {% if execute %}
         {% for row in mappings %}
-            -- Si el concepto contiene la palabra clave...
-            WHEN UPPER({{ concepto_column }}) LIKE '%{{ row['keyword'] | upper }}%'
-            -- Devolvemos: Grupo|Categoría|Subcategoría|Entidad
-            -- Usamos '|' como separador porque es raro verlo en nombres de comercios
+            -- APLICACIÓN: Comparamos limpiando TAMBIÉN la columna de concepto del banco
+            WHEN REGEXP_REPLACE(NORMALIZE(UPPER({{ concepto_column }}), NFD), r'\pM', '') LIKE '%{{ row['clean_keyword'] }}%'
             THEN '{{ row['grupo_categoria'] }}|{{ row['categoria'] }}|{{ row['subcategoria'] }}|{{ row['entity_name'] }}'
         {% endfor %}
     {% endif %}
 
-    -- Si no encuentra ninguna coincidencia, devolvemos valores por defecto
     ELSE 'Gastos Variables|Otros Gastos|Sin Clasificar|Desconocido'
     END
 

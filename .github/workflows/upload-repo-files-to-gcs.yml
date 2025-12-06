@@ -14,7 +14,7 @@ jobs:
   backup:
     name: Mirror Repository to GCS
     runs-on: ubuntu-latest
-    
+
     steps:
       # 1. Checkout del código
       - name: Checkout repository

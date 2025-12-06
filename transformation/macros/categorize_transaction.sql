@@ -1,33 +1,32 @@
--- macros/categorize_transaction.sql
-
-{% macro categorize_transaction(concepto_column, importe_column, default_gasto='Gasto - Otros', default_ingreso='Ingreso - Otros') %}
+{% macro categorize_transaction(concepto_column) %}
 
     CASE
-
-    {#- Obtenemos las reglas de mapeo del fichero seed, ordenadas por prioridad -#}
-    {% set category_mapping_query %}
-        SELECT keyword, category, priority
-        FROM {{ ref('map_categories') }}
+    {#-
+      1. Leemos del nuevo seed unificado 'master_mapping'.
+      2. Ordenamos por prioridad ASC (1 es más importante que 50).
+      3. Importante: Usamos los nombres de columna exactos de tu CSV (grupo_categoria, etc).
+    -#}
+    {% set mapping_query %}
+        SELECT keyword, grupo_categoria, categoria, subcategoria, entity_name, priority
+        FROM {{ ref('master_mapping') }}
         ORDER BY priority ASC
     {% endset %}
 
-    {#- Ejecutamos la query y guardamos los resultados -#}
-    {% set category_mappings = run_query(category_mapping_query) %}
+    {#- Ejecutamos la query para cargar las reglas en memoria -#}
+    {% set mappings = run_query(mapping_query) %}
 
-    {#- Iteramos sobre cada regla para construir el CASE WHEN -#}
     {% if execute %}
-        {% for row in category_mappings %}
-            WHEN UPPER({{ concepto_column }}) LIKE '%{{ row['keyword'] | upper }}%' THEN '{{ row['category'] }}'
+        {% for row in mappings %}
+            -- Si el concepto contiene la palabra clave...
+            WHEN UPPER({{ concepto_column }}) LIKE '%{{ row['keyword'] | upper }}%'
+            -- Devolvemos: Grupo|Categoría|Subcategoría|Entidad
+            -- Usamos '|' como separador porque es raro verlo en nombres de comercios
+            THEN '{{ row['grupo_categoria'] }}|{{ row['categoria'] }}|{{ row['subcategoria'] }}|{{ row['entity_name'] }}'
         {% endfor %}
     {% endif %}
 
-    {#- SI NINGUNA REGLA COINCIDE, aplicamos la lógica dinámica por defecto -#}
-    ELSE
-        CASE
-            WHEN {{ importe_column }} < 0 THEN '{{ default_gasto }}'
-            ELSE '{{ default_ingreso }}'
-        END
-
+    -- Si no encuentra ninguna coincidencia, devolvemos valores por defecto
+    ELSE 'Gastos Variables|Otros Gastos|Sin Clasificar|Desconocido'
     END
 
 {% endmacro %}

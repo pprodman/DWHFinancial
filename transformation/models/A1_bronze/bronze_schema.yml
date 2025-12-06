@@ -92,7 +92,7 @@ models:
   # -----------------------------------------------------------------------------
   # 5. GASTOS EN EFECTIVO (Manual - Google Sheets)
   # -----------------------------------------------------------------------------
-  - name: cash_expenses
+  - name: cash
     description: "Tabla de gastos realizados en efectivo, alimentada manualmente desde una Google Sheet externa."
     columns:
       - name: hash_id

@@ -1,36 +1,21 @@
-# models/A2_silver/silver_schema.yml
-
 version: 2
 
 models:
-  - name: fct_transactions  # ← Cambiado de 'bankinter' a 'fct_transactions'
-    description: "Tabla que unifica y estandariza las transacciones de Bankinter y otras fuentes."
+  - name: fct_transactions
+    description: "Tabla de hechos principal. Contiene todas las transacciones clasificadas jerárquicamente."
     columns:
       - name: hash_id
-        description: "Identificador único para cada transacción, generado a partir de un hash de los campos originales."
-      - name: fecha
-        description: "Fecha en la que se realizó la transacción."
-      - name: concepto
-        description: "Descripción o concepto de la transacción."
-      - name: importe
-        description: "Monto de la transacción. Positivo para ingresos, negativo para gastos."
-      - name: entidad
-        description: "Nombre de la entidad bancaria."
-      - name: origen
-        description: "Origen de la transacción."
-      - name: tipo_movimiento
-        description: "Tipo de movimiento, por ejemplo 'ingreso' o 'gasto'."
-      - name: subtipo_transaccion
-        description: "Subtipo de transacción clasificado."
-      - name: importe_personal
-        description: "Importe ajustado para cálculo personal."
+        description: "PK única."
+        tests:
+          - unique
+          - not_null
+      - name: grupo
+        description: "Nivel 1 (Jerarquía Alta): Gastos Fijos, Variables, Ahorro, Ingresos..."
       - name: categoria
-        description: "Categoría de la transacción."
+        description: "Nivel 2: Supermercado, Vivienda, Transporte..."
+      - name: subcategoria
+        description: "Nivel 3 (Detalle): Mercadona, Luz, Gasolina..."
       - name: comercio
-        description: "Comercio o entidad de la transacción."
-      - name: anio
-        description: "Año de la transacción."
-      - name: mes
-        description: "Mes de la transacción."
-      - name: anio_mes
-        description: "Año y mes concatenados."
+        description: "Nombre limpio de la entidad (ej: 'Mercadona' en vez de 'MERCADONA S.A. CASTELLON')."
+      - name: importe_personal
+        description: "Importe ajustado a mi realidad financiera (50% de gastos compartidos)."

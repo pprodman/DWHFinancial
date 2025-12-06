@@ -1,5 +1,3 @@
--- dbt_project/models/A2_silver/fct_transactions.sql
-
 {{
   config(
     materialized = 'incremental',
@@ -8,7 +6,7 @@
   )
 }}
 
--- Paso 1: Unificar todas las fuentes de la capa Bronce en un único CTE.
+-- Paso 1: Unificar fuentes
 WITH all_sources_unioned AS (
     SELECT * FROM {{ ref('bankinter_account') }}
     UNION ALL
@@ -21,10 +19,9 @@ WITH all_sources_unioned AS (
     SELECT * FROM {{ ref('cash') }}
 ),
 
--- Paso 2: Clasificar cada transacción UNA SOLA VEZ.
+-- Paso 2: Clasificación Lógica (Ingreso/Gasto/Traspaso)
 transactions_classified AS (
     SELECT
-        -- Campos originales
         hash_id,
         CAST(fecha AS DATE) AS fecha,
         concepto,
@@ -32,54 +29,40 @@ transactions_classified AS (
         entidad,
         origen,
 
-        -- Clasificación del tipo de movimiento
+        -- Tipo básico
         CASE
             WHEN importe > 0 THEN 'Ingreso'
             WHEN importe < 0 THEN 'Gasto'
             ELSE 'Neutro'
         END AS tipo_movimiento,
 
-        -- Clasificación del subtipo de transacción (LA LÓGICA VIVE AQUÍ Y SOLO AQUÍ)
+        -- Subtipo Operativo (Lógica de negocio hardcodeada necesaria)
         CASE
-            -- 1. Reglas más específicas primero
+            -- Aportaciones
             WHEN entidad = 'Bankinter' AND origen = 'Shared' AND UPPER(concepto) LIKE '%PABLO%' AND ABS(COALESCE(importe, 0)) IN (500, 750) THEN 'Aportación Periódica'
             WHEN entidad = 'Bankinter' AND origen = 'Shared' AND UPPER(concepto) LIKE '%LLEDO%' AND ABS(COALESCE(importe, 0)) IN (500, 750) THEN 'Aportación Periódica Lledó'
-
-            -- 2. Reglas de traspasos y liquidaciones
-            -- Recargas entre tus cuentas (Bankinter <-> Revolut)
+            -- Traspasos internos
             WHEN entidad = 'Bankinter' AND origen = 'Account' AND UPPER(concepto) LIKE '%REVOLUT%' THEN 'Recarga Revolut'
             WHEN entidad = 'Revolut' AND UPPER(concepto) LIKE '%RECARGA%' THEN 'Recarga Revolut'
-            -- Pago del recibo de la tarjeta desde la cuenta
             WHEN entidad = 'Bankinter' AND origen = 'Account' AND UPPER(concepto) LIKE '%RECIBO PLATINUM%' THEN 'Liquidación Tarjeta'
-            -- Aportaciones a la cuenta común
-            WHEN entidad = 'Bankinter' AND origen = 'Account' AND UPPER(concepto) LIKE 'TRANSF INTERNA%' THEN 'Traspaso Interno'
-            WHEN entidad = 'Bankinter' AND origen = 'Shared' AND UPPER(concepto) LIKE '%PABLO%' THEN 'Traspaso Interno'
-            WHEN entidad = 'Bankinter' AND origen = 'Shared' AND UPPER(concepto) LIKE '%LLEDO%' THEN 'Traspaso Interno Lledó'
-
-            -- 3. Reglas para gastos especiales
-            WHEN entidad = 'Bankinter' AND origen = 'Shared' AND UPPER(concepto) LIKE '%RECIBO VISA CLASICA%' THEN 'Liquidación Tarjeta Compartida'
-
-            -- 4. Regla por defecto
-            ELSE 'Gasto/Ingreso Regular'
+            -- Bizums y otros traspasos
+            WHEN UPPER(concepto) LIKE '%BIZUM%' THEN 'Bizum'
+            ELSE 'Transacción Regular'
         END AS subtipo_transaccion
 
     FROM all_sources_unioned
 ),
 
--- Paso 3: Calcular el importe personal BASADO EN la clasificación anterior.
-transactions_with_personal_amount AS (
+-- Paso 3: Aplicación de la Macro de Categorización Jerárquica
+transactions_enriched AS (
     SELECT
         *,
-        CASE
-            WHEN subtipo_transaccion NOT IN ('Gasto/Ingreso Regular', 'Liquidación Tarjeta Compartida') THEN 0
-            WHEN origen = 'Shared' AND subtipo_transaccion IN ('Gasto/Ingreso Regular', 'Liquidación Tarjeta Compartida') THEN importe * 0.5
-            ELSE importe
-        END AS importe_personal
-
+        -- Llamamos a la macro UNA VEZ por fila. Esto devuelve "Grupo|Cat|Subcat|Entidad"
+        {{ categorize_transaction('concepto') }} as _cat_string
     FROM transactions_classified
 )
 
--- Paso 4: Selección final y aplicación de macros
+-- Paso 4: Desglose final
 SELECT
     hash_id,
     fecha,
@@ -89,26 +72,32 @@ SELECT
     origen,
     tipo_movimiento,
     subtipo_transaccion,
-    importe_personal,
 
-    -- Categoría y Comercio
+    -- Lógica de importe personal (50% en compartidos)
     CASE
-        WHEN subtipo_transaccion IN ('Gasto/Ingreso Regular', 'Liquidación Tarjeta Compartida') THEN {{ categorize_transaction('concepto', 'importe') }}
-        ELSE 'Movimientos Internos'
-    END AS categoria,
+        WHEN origen = 'Shared' AND subtipo_transaccion = 'Transacción Regular' THEN importe * 0.5
+        ELSE importe
+    END AS importe_personal,
 
-    {{ standardize_entity('concepto', 'NULL') }} AS comercio,
+    -- Desempaquetamos la cadena de la macro
+    SPLIT(_cat_string, '|')[SAFE_OFFSET(0)] AS grupo,
+    SPLIT(_cat_string, '|')[SAFE_OFFSET(1)] AS categoria,
+    SPLIT(_cat_string, '|')[SAFE_OFFSET(2)] AS subcategoria,
 
-    -- Campos de fecha
+    -- Para el comercio/entidad limpia, si la macro devuelve "Desconocido",
+    -- usamos el concepto original formateado (Primera Letra Mayúscula) como fallback.
+    CASE
+        WHEN SPLIT(_cat_string, '|')[SAFE_OFFSET(3)] = 'Desconocido' THEN INITCAP(concepto)
+        ELSE SPLIT(_cat_string, '|')[SAFE_OFFSET(3)]
+    END AS comercio,
+
+    -- Fecha
     EXTRACT(YEAR FROM fecha) AS anio,
     EXTRACT(MONTH FROM fecha) AS mes,
     FORMAT_DATE('%Y-%m', fecha) AS anio_mes
 
-FROM transactions_with_personal_amount
+FROM transactions_enriched
 
 {% if is_incremental() %}
-  WHERE hash_id NOT IN (
-    SELECT hash_id
-    FROM {{ this }}
-  )
+  WHERE hash_id NOT IN (SELECT hash_id FROM {{ this }})
 {% endif %}

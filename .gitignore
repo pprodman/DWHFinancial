@@ -19,7 +19,6 @@ transformation/logs/
 
 # Secretos y Credenciales (¡MUY IMPORTANTE!)
 /auth
-*.json
 *.key
 .env
 profiles.yml  # Si decides poner credenciales locales aquí

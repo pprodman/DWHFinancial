@@ -1,21 +1,19 @@
 name: Run Pipeline
 
-# Se ejecuta automáticamente a las 06:00 UTC
-# O manualmente desde la pestaña Actions
 on:
   schedule:
     - cron: '0 6 * * *'
   workflow_dispatch:
 
 env:
-  # Variables globales
+  # Variables globales de infraestructura
   GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
   GCS_BUCKET_NAME: ${{ secrets.GCS_BUCKET_NAME }}
   DRIVE_PARENT_FOLDER_ID: ${{ secrets.DRIVE_PARENT_FOLDER_ID }}
-  # Variables para dbt (se usan en profiles.yml)
+
+  # Variables dbt
   DBT_GCP_PROJECT: ${{ secrets.GCP_PROJECT_ID }}
-  DBT_GCP_DATASET: bronze_standard # O el dataset por defecto que quieras
-  DBT_PROFILES_DIR: ./transformation # Donde buscará el profiles.yml
+  DBT_GCP_DATASET: bronze_standard
 
 jobs:
   run_elt:
@@ -23,33 +21,27 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Bajar el código
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # 2. Configurar Python 3.11
       - name: Set up Python 3.11
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-          cache: 'pip' # Acelera instalaciones futuras
+          cache: 'pip'
 
-      # 3. Autenticación Crítica: Crear archivo JSON temporal desde el Secreto
       - name: Authenticate to GCP
         run: |
           echo '${{ secrets.GCP_SA_KEY }}' > ./gcp_key.json
         shell: bash
 
-      # 4. Instalar librerías (Ingestión + dbt)
-      # Nota: Instalamos dbt-bigquery aquí también
       - name: Install Dependencies
         run: |
           pip install -r ingestion/requirements.txt
+          # dbt-bigquery ya está en requirements, pero por seguridad:
           pip install dbt-bigquery
 
-      # ----------------------------------------------------------------
-      # FASE 1: INGESTIÓN (Python)
-      # ----------------------------------------------------------------
+      # --- FASE 1: INGESTIÓN ---
       - name: Execute Ingestion Script
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ./gcp_key.json
@@ -58,33 +50,28 @@ jobs:
           python ingestion/main.py
           echo "✅ Ingestion Finished."
 
-      # ----------------------------------------------------------------
-      # FASE 2: TRANSFORMACIÓN (dbt)
-      # ----------------------------------------------------------------
+      # --- FASE 2: TRANSFORMACIÓN ---
       - name: Execute dbt Transformation
         env:
-          GOOGLE_APPLICATION_CREDENTIALS: ./gcp_key.json
-          # dbt necesita saber dónde está la llave.
-          # Asegúrate de que tu profiles.yml use {{ env_var('GOOGLE_APPLICATION_CREDENTIALS') }}
+          GOOGLE_APPLICATION_CREDENTIALS: ../gcp_key.json # ¡OJO AQUÍ!
+          # Explicación: Al hacer 'cd transformation', el archivo gcp_key.json
+          # queda un nivel arriba (en la raíz), por eso usamos '../'
         run: |
           echo "🏗️ Starting Transformation Phase..."
           cd transformation
 
-          # Instalar dependencias de dbt (si usas paquetes como dbt-utils)
+          # 1. Instalar dependencias
           dbt deps
 
-          # Cargar seeds (mapeos) por si han cambiado
-          dbt seed --target prod
+          # 2. Seeds
+          # Usamos --profiles-dir . porque ya estamos DENTRO de la carpeta transformation
+          dbt seed --target prod --profiles-dir .
 
-          # Ejecutar modelos
-          dbt run --target prod
-
-          # (Opcional) Correr tests
-          # dbt test --target prod
+          # 3. Run
+          dbt run --target prod --profiles-dir .
 
           echo "✅ Transformation Finished."
 
-      # 6. Limpieza de Seguridad (Borrar llave siempre, aunque falle el script)
       - name: Cleanup Credentials
         if: always()
         run: |

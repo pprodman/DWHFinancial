@@ -7,15 +7,13 @@ from google.oauth2 import service_account
 from google.auth import default
 from dotenv import load_dotenv
 
-# --- CONFIGURACIÓN ---
 BASE_DIR = Path(__file__).resolve().parent.parent
 TARGET_CSV = BASE_DIR / "transformation" / "seeds" / "master_mapping.csv"
 
 load_dotenv(BASE_DIR / ".env")
 
 SHEET_ID = os.environ.get("MAPPING_SHEET_ID")
-# Nombre de la pestaña. Si tiene espacios, es mejor ponerlo tal cual.
-SHEET_NAME = "dbt - mapping"
+SHEET_NAME = os.environ.get("MAPPING_SHEET_NAME")
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(message)s", datefmt="%H:%M:%S"
@@ -57,8 +55,6 @@ def sync_seeds():
         creds = get_credentials()
         service = build("sheets", "v4", credentials=creds)
 
-        # CORRECCIÓN: Forzamos el rango como "NombrePestaña!A:Z" para asegurar que lo pilla
-        # Si la pestaña se llama 'dbt - mapping', el rango debe ser "'dbt - mapping'!A:Z"
         range_name = f"'{SHEET_NAME}'!A:Z"
 
         logging.info(f"📄 Sheet ID: {SHEET_ID[:5]}...")
@@ -74,7 +70,6 @@ def sync_seeds():
 
         logging.info(f"📥 Descargadas {len(rows)} filas.")
 
-        # --- NORMALIZACIÓN DE COLUMNAS (Para evitar error de longitud) ---
         headers = rows[0]
         expected_cols = len(headers)
         raw_data = rows[1:]
@@ -86,7 +81,6 @@ def sync_seeds():
             elif len(row) > expected_cols:
                 row = row[:expected_cols]
             normalized_data.append(row)
-        # -----------------------------------------------------------------
 
         df = pd.DataFrame(normalized_data, columns=headers)
 

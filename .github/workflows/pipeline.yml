@@ -1,23 +1,19 @@
-name: Run Pipeline
+name: Run Full ELT Pipeline
 
 on:
   schedule:
-    - cron: '0 6 * * *' # 06:00 UTC diario
-  workflow_dispatch:    # Botón manual
+    - cron: '0 6 * * *'
+  workflow_dispatch:
 
 env:
-  # Variables globales
   GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
   GCS_BUCKET_NAME: ${{ secrets.GCS_BUCKET_NAME }}
   DRIVE_PARENT_FOLDER_ID: ${{ secrets.DRIVE_PARENT_FOLDER_ID }}
   MAPPING_SHEET_ID: ${{ secrets.MAPPING_SHEET_ID }}
 
-  # Variables específicas para dbt (Standard)
-  DBT_PROFILES_DIR: .  # Buscar profiles.yml en la carpeta actual de ejecución
-
 jobs:
   run_full_process:
-    name: Run Full ELT Pipeline
+    name: Run Ingestion and dbt
     runs-on: ubuntu-latest
 
     steps:
@@ -36,7 +32,7 @@ jobs:
           echo '${{ secrets.GCP_SA_KEY }}' > ./gcp_key.json
         shell: bash
 
-      # 2. Instalar Todo (Ingestión + dbt)
+      # 2. Instalar Dependencias
       - name: 📦 Install Dependencies
         run: |
           pip install -r ingestion/requirements.txt
@@ -52,7 +48,6 @@ jobs:
           echo "✅ Ingestion Finished."
 
       # 4. ACTUALIZAR SEEDS
-      # Descargamos el mapeo fresco de Google Sheets antes de transformar
       - name: 🌱 Sync Seeds from Sheets
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ./gcp_key.json
@@ -62,29 +57,25 @@ jobs:
 
       # 5. EJECUTAR TRANSFORMACIÓN (dbt)
       - name: 🧠 Run dbt Transformation
+        working-directory: ./transformation
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ../gcp_key.json
+          DBT_PROFILES_DIR: .
         run: |
-          echo "🏗️ Starting Transformation Phase..."
-          cd transformation
+          echo "🏗️ Starting Transformation Phase inside ./transformation..."
 
-          # Instalar paquetes (dbt utils, etc)
+          # Instalar paquetes
           dbt deps
 
-          # Cargar seeds (CSV a BigQuery)
+          # Ejecutar Seeds y Modelos
           dbt seed --target prod
-
-          # Ejecutar modelos (Incremental)
           dbt run --target prod
-
-          # Test de calidad (Opcional)
-          # dbt test --target prod
 
           echo "✅ Transformation Finished."
 
       # 6. Limpieza de Seguridad
       - name: 🧹 Cleanup
         if: always()
-        run:
+        run: |
           rm -f ./gcp_key.json
           echo "🔒 Credentials wiped."

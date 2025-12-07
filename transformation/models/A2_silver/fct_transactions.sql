@@ -16,7 +16,7 @@ WITH all_sources AS (
     UNION ALL
     SELECT * FROM {{ ref('revolut_account') }}
     UNION ALL
-    SELECT * FROM {{ ref('cash_expenses') }}
+    SELECT * FROM {{ ref('cash') }}
 ),
 
 -- 2. Enriquecimiento con Macro y Lógica Operativa

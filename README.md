@@ -1,83 +1,65 @@
-🏦 DWH Financial - Hybrid Architecture
+# 🏦 DWH Financial - Local & GitHub Architecture
 
-Pipeline de datos personales para centralizar finanzas (Bancos, Tarjetas, Revolut) en Google BigQuery para su visualización en Looker Studio.
+Pipeline ELT personal para finanzas. Ejecución local o vía GitHub Actions (Serverless).
 
-🏗️ Arquitectura Híbrida
+## 🏗️ Arquitectura
 
-Este proyecto utiliza un enfoque moderno Híbrido:
+1. Ingestión (Python): `ingestion/main.py`. Mueve Excels de Drive a GCS y genera CSVs de configuración desde Google Sheets.
 
-Ingestión (Local / Python): Scripts en Python que se ejecutan localmente (o en GitHub Actions) para mover datos de Google Drive a Google Cloud Storage.
+2. Transformación (dbt Core): `transformation/`. Modelos SQL ejecutados por `dbt-bigquery`.
 
-Transformación (Cloud / dbt): Toda la lógica de negocio SQL se gestiona y ejecuta en dbt Cloud, conectado a BigQuery.
+3. Orquestación: GitHub Actions (`.github/workflows/daily_pipeline.yml`).
 
-graph LR
-    A[Google Drive\n(Excels)] -->|Python Script| B[Google Cloud Storage\n(JSONL)]
-    B -->|BigQuery External Tables| C[BigQuery\n(Bronze)]
-    C -->|dbt Cloud| D[BigQuery\n(Silver/Gold)]
-    D -->|Conexión Directa| E[Looker Studio]
+## 🚀 Flujo de Trabajo
 
+### A. Trabajo Diario (Automático)
 
-📂 Estructura del Proyecto
+El pipeline corre a las 06:00 AM UTC en GitHub Actions:
 
-ingestion/: Código Python para la extracción y carga (EL).
+1. Ingesta nuevos archivos de Drive.
 
-config/: Mapeos de columnas para cada banco.
+2. Actualiza reglas de categorización desde Google Sheets.
 
-transformation/: Modelos SQL de dbt (Sincronizado con dbt Cloud).
+3. Ejecuta `dbt run` en BigQuery.
 
-scripts/: Utilidades para gestión local (PowerShell).
+### B. Trabajo Manual (Local con VS Code)
 
-experiments/: (Ignorado por git) Notebooks para pruebas de datos sucios.
+Usamos `scripts/manage.ps1` como centro de mando.
 
-🚀 Cómo trabajar (Flujo Diario)
+1. Actualizar configuración (Si cambiaste el Excel de mapeo):
+```
+.\scripts\manage.ps1 update-seeds
+git add .
+git commit -m "update mapping"
+git push
+```
 
-1. Ingesta de Datos (Local)
-
-Coloca los archivos .xlsx en la carpeta PENDING de tu Google Drive.
-
-# Desde VS Code
+2. Probar ingesta manual:
+```
 .\scripts\manage.ps1 run-ingestion
+```
 
+3. Regenerar tablas dbt (Si cambiaste lógica SQL):
+```
+.\scripts\manage.ps1 dbt-refresh
+```
 
-2. Desarrollo y Transformación (dbt Cloud)
+## 🛠️ Configuración Local
 
-Accede a dbt Cloud.
+### 1. Entorno:
 
-Desarrolla en la rama dev.
+- Python 3.11+
 
-Ejecuta dbt run para actualizar tablas.
+- Archivo .env en la raíz con:
+```
+GCP_PROJECT_ID=...
+GCS_BUCKET_NAME=...
+DRIVE_PARENT_FOLDER_ID=...
+MAPPING_SHEET_ID=...
+GOOGLE_APPLICATION_CREDENTIALS=C:\Ruta\Absoluta\a\keys\gcp_key.json
+```
 
-Haz Commit & Push en la web cuando termines.
-
-3. Sincronizar Local (Opcional)
-
-Si quieres tener una copia del código SQL actualizado en tu máquina:
-
-git pull origin main
-
-
-🛠️ Configuración Inicial
-
-Python: Requiere Python 3.11+.
-
+### 2. Instalación:
+```
 .\scripts\manage.ps1 install
-
-
-Variables de Entorno (.env):
-Crear un archivo .env en la raíz con:
-
-GCP_PROJECT_ID=tu-proyecto-id
-GCS_BUCKET_NAME=tu-bucket
-DRIVE_PARENT_FOLDER_ID=tu-drive-folder-id
-GOOGLE_APPLICATION_CREDENTIALS=./keys/gcp_key.json
-
-
-📊 Stack Tecnológico
-
-Cloud: Google Cloud Platform (BigQuery, Storage).
-
-Lenguaje: Python 3.11.
-
-Transformación: dbt Core (vía dbt Cloud).
-
-BI: Looker Studio.
+```

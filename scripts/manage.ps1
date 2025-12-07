@@ -2,32 +2,44 @@
 .SYNOPSIS
     Gestor de Proyecto DWH Financial (Modo Híbrido)
 .DESCRIPTION
-    Script para gestionar las tareas locales de Python.
-    Las tareas de transformación (dbt) se gestionan ahora en dbt Cloud.
+    Script para gestionar las tareas locales de Python y dbt.
 .EXAMPLE
-    .\scripts\manage.ps1 install
     .\scripts\manage.ps1 run-ingestion
     .\scripts\manage.ps1 update-seeds
+    .\scripts\manage.ps1 dbt-refresh
 #>
+
+# --- CARGA DE VARIABLES DE ENTORNO (.env) ---
+# Esto se ejecuta siempre antes que nada.
+$RootPath = Resolve-Path "$PSScriptRoot\.."
+if (Test-Path "$RootPath\.env") {
+    Write-Host "[INFO] Cargando variables desde .env..." -ForegroundColor DarkGray
+    Get-Content "$RootPath\.env" | ForEach-Object {
+        # Ignorar comentarios (#) y líneas vacías
+        if ($_ -match '^([^#=]+)=(.*)$') {
+            $key = $matches[1].Trim()
+            $value = $matches[2].Trim()
+            [System.Environment]::SetEnvironmentVariable($key, $value, "Process")
+        }
+    }
+}
 
 param (
     [Parameter(Mandatory=$false)]
-    [ValidateSet("install", "run-ingestion", "clean", "help", "update-seeds")]
+    # Añadimos 'dbt-refresh' a las opciones
+    [ValidateSet("install", "run-ingestion", "clean", "help", "update-seeds", "dbt-refresh")]
     [string]$Command = "help"
 )
 
-# Definimos rutas relativas a la raíz del proyecto
-$RootPath = Resolve-Path "$PSScriptRoot\.."
 $IngestionDir = Join-Path $RootPath "ingestion"
 
 function Show-Help {
     Write-Host "--- DWH Financial Manager (Hybrid Edition) ---" -ForegroundColor Cyan
     Write-Host "  install         - Instala las dependencias de Python"
     Write-Host "  run-ingestion   - Ejecuta el pipeline de ingestión (Drive -> GCS)"
-    Write-Host "  update-seeds    - Descarga el mapeo actualizado desde Google Sheets -> CSV Local"
+    Write-Host "  update-seeds    - Descarga el mapeo actualizado desde Google Sheets"
+    Write-Host "  dbt-refresh     - Reconstruye todas las tablas dbt desde cero (Full Refresh)"
     Write-Host "  clean           - Limpia archivos temporales"
-    Write-Host ""
-    Write-Host "  Nota: Para ejecutar dbt, usa la interfaz web de dbt Cloud." -ForegroundColor DarkGray
 }
 
 if ($Command -eq "help") { Show-Help; exit }
@@ -42,25 +54,37 @@ if ($Command -eq "install") {
 # --- RUN INGESTION ---
 if ($Command -eq "run-ingestion") {
     Write-Host "[INFO] Iniciando Pipeline de Ingestion..." -ForegroundColor Green
-
-    if (-not (Test-Path "$RootPath\.env")) {
-        Write-Warning "[AVISO] No detecto el archivo .env en la raiz."
-    }
-
     $ScriptPath = Join-Path $IngestionDir "main.py"
     python $ScriptPath
 }
 
 # --- UPDATE SEEDS ---
 if ($Command -eq "update-seeds") {
-    Write-Host "[INFO] Sincronizando Seeds desde Google Sheets..." -ForegroundColor Cyan
-
-    if (-not (Test-Path "$RootPath\.env")) {
-        Write-Warning "[AVISO] No detecto el archivo .env. El script fallara si no encuentra MAPPING_SHEET_ID."
-    }
-
+    Write-Host "[INFO] Sincronizando Seeds desde Google Sheets..." -ForegroundColor Green
     $ScriptPath = Join-Path $IngestionDir "sync_seeds.py"
     python $ScriptPath
+}
+
+# --- DBT FULL REFRESH (NUEVO) ---
+if ($Command -eq "dbt-refresh") {
+    Write-Host "[INFO] Ejecutando dbt Full Refresh..." -ForegroundColor Cyan
+
+    # Configuramos el directorio de perfiles automáticamente
+    $env:DBT_PROFILES_DIR = Join-Path $RootPath "transformation"
+
+    # 1. Actualizar Seeds primero (por si el Excel cambió)
+    Write-Host "   > Cargando seeds (map_categories, master_mapping...)" -ForegroundColor Gray
+    dbt seed --project-dir "$RootPath\transformation"
+
+    # 2. Ejecutar Full Refresh
+    Write-Host "   > Reconstruyendo tablas..." -ForegroundColor Gray
+    dbt run --full-refresh --project-dir "$RootPath\transformation"
+
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "[OK] Tablas reconstruidas y categorizadas." -ForegroundColor Green
+    } else {
+        Write-Error "[ERROR] Algo fallo en dbt."
+    }
 }
 
 # --- CLEAN ---

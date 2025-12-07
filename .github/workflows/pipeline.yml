@@ -2,78 +2,89 @@ name: Run Pipeline
 
 on:
   schedule:
-    - cron: '0 6 * * *'
-  workflow_dispatch:
+    - cron: '0 6 * * *' # 06:00 UTC diario
+  workflow_dispatch:    # Botón manual
 
 env:
-  # Variables globales de infraestructura
+  # Variables globales
   GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
   GCS_BUCKET_NAME: ${{ secrets.GCS_BUCKET_NAME }}
   DRIVE_PARENT_FOLDER_ID: ${{ secrets.DRIVE_PARENT_FOLDER_ID }}
+  MAPPING_SHEET_ID: ${{ secrets.MAPPING_SHEET_ID }}
 
-  # Variables dbt
-  DBT_GCP_PROJECT: ${{ secrets.GCP_PROJECT_ID }}
-  DBT_GCP_DATASET: bronze_standard
+  # Variables específicas para dbt (Standard)
+  DBT_PROFILES_DIR: .  # Buscar profiles.yml en la carpeta actual de ejecución
 
 jobs:
-  run_elt:
+  run_full_process:
     name: Run Full ELT Pipeline
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Code
+      - name: 📥 Checkout Code
         uses: actions/checkout@v4
 
-      - name: Set up Python 3.11
+      - name: 🐍 Set up Python 3.11
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
           cache: 'pip'
 
-      - name: Authenticate to GCP
+      # 1. Crear Credenciales
+      - name: 🔑 Authenticate to GCP
         run: |
           echo '${{ secrets.GCP_SA_KEY }}' > ./gcp_key.json
         shell: bash
 
-      - name: Install Dependencies
+      # 2. Instalar Todo (Ingestión + dbt)
+      - name: 📦 Install Dependencies
         run: |
           pip install -r ingestion/requirements.txt
-          # dbt-bigquery ya está en requirements, pero por seguridad:
-          pip install dbt-bigquery
+          pip install -r transformation/requirements.txt
 
-      # --- FASE 1: INGESTIÓN ---
-      - name: Execute Ingestion Script
+      # 3. EJECUTAR INGESTIÓN (Python)
+      - name: 📤 Run Ingestion (Drive -> GCS)
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ./gcp_key.json
         run: |
-          echo "🚀 Starting Ingestion Phase..."
+          echo "🚀 Starting Python Ingestion..."
           python ingestion/main.py
           echo "✅ Ingestion Finished."
 
-      # --- FASE 2: TRANSFORMACIÓN ---
-      - name: Execute dbt Transformation
+      # 4. ACTUALIZAR SEEDS
+      # Descargamos el mapeo fresco de Google Sheets antes de transformar
+      - name: 🌱 Sync Seeds from Sheets
         env:
-          GOOGLE_APPLICATION_CREDENTIALS: ../gcp_key.json # ¡OJO AQUÍ!
-          # Explicación: Al hacer 'cd transformation', el archivo gcp_key.json
-          # queda un nivel arriba (en la raíz), por eso usamos '../'
+          GOOGLE_APPLICATION_CREDENTIALS: ./gcp_key.json
+        run: |
+          echo "🌱 Syncing Seeds..."
+          python ingestion/sync_seeds.py
+
+      # 5. EJECUTAR TRANSFORMACIÓN (dbt)
+      - name: 🧠 Run dbt Transformation
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ../gcp_key.json
         run: |
           echo "🏗️ Starting Transformation Phase..."
           cd transformation
 
-          # 1. Instalar dependencias
+          # Instalar paquetes (dbt utils, etc)
           dbt deps
 
-          # 2. Seeds
-          # Usamos --profiles-dir . porque ya estamos DENTRO de la carpeta transformation
-          dbt seed --target prod --profiles-dir .
+          # Cargar seeds (CSV a BigQuery)
+          dbt seed --target prod
 
-          # 3. Run
-          dbt run --target prod --profiles-dir .
+          # Ejecutar modelos (Incremental)
+          dbt run --target prod
+
+          # Test de calidad (Opcional)
+          # dbt test --target prod
 
           echo "✅ Transformation Finished."
 
-      - name: Cleanup Credentials
+      # 6. Limpieza de Seguridad
+      - name: 🧹 Cleanup
         if: always()
-        run: |
+        run:
           rm -f ./gcp_key.json
           echo "🔒 Credentials wiped."

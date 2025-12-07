@@ -1,15 +1,18 @@
-# transformation/profiles.yml
 mi_pipeline_bancario:
-  target: dev
+  target: prod
   outputs:
+    # Entorno de Desarrollo (Tu PC)
     dev:
       type: bigquery
       method: service-account
-      project: "{{ env_var('GCP_PROJECT_ID') }}" # Lee del .env
-      dataset: bronze_standard # Dataset por defecto
+      project: "{{ env_var('GCP_PROJECT_ID') }}"
+      dataset: bronze_standard
       threads: 4
-      keyfile: "{{ env_var('GOOGLE_APPLICATION_CREDENTIALS') }}" # Lee del .env
+      keyfile: "{{ env_var('GOOGLE_APPLICATION_CREDENTIALS') }}"
       location: US
+      priority: interactive
+
+    # Entorno de Producción (GitHub Actions)
     prod:
       type: bigquery
       method: service-account
@@ -18,3 +21,4 @@ mi_pipeline_bancario:
       threads: 4
       keyfile: "{{ env_var('GOOGLE_APPLICATION_CREDENTIALS') }}"
       location: US
+      priority: interactive

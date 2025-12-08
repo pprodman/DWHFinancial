@@ -1,12 +1,23 @@
-# Librerías de Google Cloud
-google-cloud-storage
-google-api-python-client
-google-auth
+# Google Cloud & IA ---
+google-cloud-storage>=2.14.0
+google-api-python-client>=2.111.0
+google-auth>=2.26.0
 
-# Librerías de procesamiento de datos
-pandas
-openpyxl
+google-generativeai>=0.5.0
+google-cloud-bigquery>=3.17.0
+
+google-cloud-bigquery-storage>=2.24.0
+google-cloud-aiplatform>=1.38.0
+
+# Procesamiento de Datos ---
+pandas>=2.1.0
+openpyxl>=3.1.2
 xlrd>=2.0.1
 
-# Librerías de Utilidad
-python-dotenv
+# dbt (Core + Adapter) ---
+dbt-core>=1.8.0
+dbt-bigquery>=1.8.0
+
+# Utilidades ---
+python-dotenv>=1.0.0
+protobuf>=4.25.3,<6.0.0dev

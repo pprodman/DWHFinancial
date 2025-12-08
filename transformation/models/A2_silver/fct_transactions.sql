@@ -29,18 +29,21 @@ enriched_transactions AS (
         entidad,
         origen,
 
-        -- Macro maestra
-        {{ categorize_transaction('concepto') }} as _cat_string,
+        -- Llamada a la macro maestra UNA VEZ
+        -- Nos aseguramos de que importe no sea null para la macro
+        {{ categorize_transaction('concepto', 'COALESCE(importe, 0)') }} as _cat_string,
 
         -- Detectar operativa interna
         CASE
-            -- Liquidaciones
+            -- Liquidaciones de tarjeta
             WHEN entidad = 'Bankinter' AND origen = 'Account' AND UPPER(concepto) LIKE '%RECIBO PLATINUM%' THEN 'Liquidación Tarjeta'
             WHEN entidad = 'Bankinter' AND origen = 'Shared' AND UPPER(concepto) LIKE '%RECIBO VISA CLASICA%' THEN 'Liquidación Tarjeta Compartida'
-            -- Aportaciones
+
+            -- Aportaciones periódicas
             WHEN entidad = 'Bankinter' AND origen = 'Shared' AND UPPER(concepto) LIKE '%PABLO%' AND ABS(COALESCE(importe, 0)) IN (500, 750) THEN 'Aportación'
             WHEN entidad = 'Bankinter' AND origen = 'Shared' AND UPPER(concepto) LIKE '%LLEDO%' AND ABS(COALESCE(importe, 0)) IN (500, 750) THEN 'Aportación Lledó'
-            -- Otros
+
+            -- Movimientos internos
             WHEN UPPER(concepto) LIKE '%TRASPASO%' OR UPPER(concepto) LIKE '%TRANSFERENCIA INTERNA%' THEN 'Traspaso Interno'
             WHEN UPPER(concepto) LIKE '%BIZUM%' THEN 'Bizum'
             ELSE 'Movimiento Regular'
@@ -64,11 +67,12 @@ SELECT
     origen,
     operativa_interna,
 
-    -- Dimensiones Jerárquicas
+    -- Dimensiones Jerárquicas (Parseo seguro del string de la macro)
     SPLIT(_cat_string, '|')[SAFE_OFFSET(0)] AS grupo,
     SPLIT(_cat_string, '|')[SAFE_OFFSET(1)] AS categoria,
     SPLIT(_cat_string, '|')[SAFE_OFFSET(2)] AS subcategoria,
 
+    -- Nombre Limpio del Comercio
     CASE
         WHEN SPLIT(_cat_string, '|')[SAFE_OFFSET(3)] = 'Desconocido' THEN INITCAP(concepto)
         ELSE SPLIT(_cat_string, '|')[SAFE_OFFSET(3)]
@@ -76,13 +80,11 @@ SELECT
 
     -- NUEVA COLUMNA BOOLEANA: ¿Es un gasto compartido?
     CASE
-        -- Todo lo que salga de la cuenta 'Shared' (salvo aportaciones de capital) es compartido
         WHEN origen = 'Shared' AND operativa_interna NOT IN ('Aportación', 'Aportación Lledó') THEN TRUE
         ELSE FALSE
     END AS es_compartido,
 
-    -- Métricas Calculadas (Convenience)
-    -- Mantenemos importe_personal ya calculado por comodidad, pero usando el booleano
+    -- Métricas Calculadas
     CASE
         -- Si es compartido -> 50%
         WHEN origen = 'Shared' AND operativa_interna NOT IN ('Aportación', 'Aportación Lledó') THEN importe * 0.5
@@ -92,7 +94,7 @@ SELECT
         ELSE importe
     END AS importe_personal,
 
-    -- Flag de Movimiento Real (para filtros)
+    -- Flag de Movimiento Real
     CASE
         WHEN operativa_interna = 'Liquidación Tarjeta Compartida' THEN TRUE
         WHEN operativa_interna IN ('Liquidación Tarjeta', 'Traspaso Interno', 'Aportación', 'Aportación Lledó') THEN FALSE

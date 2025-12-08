@@ -1,6 +1,6 @@
 import os
 import pandas as pd
-import google.generativeai as genai  # Librería gratuita
+import google.generativeai as genai
 from google.cloud import bigquery
 from pathlib import Path
 from dotenv import load_dotenv
@@ -9,13 +9,14 @@ from dotenv import load_dotenv
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env")
 
-# Credenciales para BigQuery (Sigue usando Service Account)
-CREDENTIALS_PATH = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
-
-# Credenciales para IA (Nueva API Key Gratuita)
+# Credenciales
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
+# Para BigQuery usamos las credenciales de servicio
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = os.environ.get(
+    "GOOGLE_APPLICATION_CREDENTIALS"
+)
 
-# Rutas
+# Archivos
 SEEDS_DIR = BASE_DIR / "transformation" / "seeds"
 MAPPING_FILE = SEEDS_DIR / "master_mapping.csv"
 OUTPUT_FILE = BASE_DIR / "suggested_mappings.csv"
@@ -23,7 +24,7 @@ OUTPUT_FILE = BASE_DIR / "suggested_mappings.csv"
 
 def configure_ai():
     if not GEMINI_API_KEY:
-        print("❌ Error: Falta la variable GEMINI_API_KEY en el archivo .env")
+        print("❌ Error: Falta GEMINI_API_KEY en el .env")
         return False
 
     genai.configure(api_key=GEMINI_API_KEY)
@@ -31,18 +32,17 @@ def configure_ai():
 
 
 def get_uncategorized_concepts():
-    """Consulta BigQuery para obtener conceptos que la macro no pudo clasificar."""
+    """Consulta BigQuery para obtener conceptos sin clasificar."""
     client = bigquery.Client()
 
-    # Buscamos conceptos donde el grupo sea 'Sin Clasificar'
-    # Ajusta esta query según cómo se llame tu categoría por defecto en la macro
+    # Ajusta esta query según tus datos reales en Silver
     query = """
     SELECT DISTINCT concepto
     FROM `dwhfinancial.silver.fct_transactions`
-    WHERE grupo = 'Gastos Variables'
-      AND categoria = 'Otros Gastos'
-      AND subcategoria = 'Sin Clasificar'
-    LIMIT 30
+    WHERE (grupo IS NULL OR grupo = 'Sin Clasificar' OR grupo = 'Gastos Variables')
+      AND (categoria IS NULL OR categoria = 'Otros Gastos')
+      AND (subcategoria IS NULL OR subcategoria = 'Sin Clasificar')
+    LIMIT 20
     """
 
     try:
@@ -56,13 +56,12 @@ def get_uncategorized_concepts():
 
 
 def get_categories_context():
-    """Lee el mapping actual para enseñarle a la IA tu estructura."""
+    """Lee el mapping actual para dar contexto a la IA."""
     if not MAPPING_FILE.exists():
-        return "No hay contexto previo."
+        return "Estructura estándar de finanzas personales."
 
     try:
         df = pd.read_csv(MAPPING_FILE)
-        # Creamos una lista compacta de ejemplos únicos
         structure = (
             df[["grupo_categoria", "categoria", "subcategoria"]]
             .drop_duplicates()
@@ -73,75 +72,83 @@ def get_categories_context():
         return "Estructura estándar."
 
 
-def generate_suggestions(concepts, context_structure):
-    """Usa Gemini Pro (Versión Gratuita) para clasificar."""
+def try_generate(model_name, prompt):
+    """Intenta generar contenido con un modelo específico."""
+    print(f"🤖 Probando con modelo: {model_name}...")
+    model = genai.GenerativeModel(model_name)
+    response = model.generate_content(prompt)
+    return response.text
 
-    # Configuración del modelo gratuito
-    model = genai.GenerativeModel("gemini-1.5-flash")
+
+def generate_suggestions(concepts, context_structure):
 
     prompt = f"""
-    Eres un experto Data Engineer. Clasifica estos movimientos bancarios siguiendo MI estructura existente.
+    Eres un experto Data Engineer. Clasifica estos movimientos bancarios siguiendo MI estructura.
 
     MIS CATEGORÍAS VÁLIDAS:
     {context_structure}
 
     INSTRUCCIONES:
-    Para cada concepto de la lista, genera una línea CSV con este formato exacto:
-    keyword,priority,grupo_categoria,categoria,subcategoria,entity_name
+    Genera un CSV (sin markdown) con: keyword,priority,grupo_categoria,categoria,subcategoria,entity_name
 
     REGLAS:
-    1. keyword: La parte clave del concepto (MAYÚSCULAS).
-    2. priority: Siempre 50.
-    3. entity_name: Nombre limpio de la empresa (Title Case).
-    4. Usa solo combinaciones válidas de mi lista. Si es duda, usa 'Gastos Variables,Otros,Varios'.
-    5. NO uses bloques de código markdown (```). Solo devuelve el texto CSV.
+    1. keyword: Texto clave del concepto en MAYÚSCULAS.
+    2. priority: 50.
+    3. entity_name: Nombre limpio (Title Case).
+    4. Usa solo mi estructura. Si dudas: 'Gastos Variables,Otros,Varios'.
 
-    CONCEPTOS A CLASIFICAR:
+    CONCEPTOS:
     {", ".join(concepts)}
     """
 
-    try:
-        response = model.generate_content(prompt)
-        # Limpieza de la respuesta por si la IA pone formato markdown
-        clean_text = response.text.replace("```csv", "").replace("```", "").strip()
-        return clean_text
-    except Exception as e:
-        print(f"🔥 Error en la llamada a la IA: {e}")
-        return None
+    # --- CAMBIO IMPORTANTE: Lista de modelos basada en tu log ---
+    models_to_try = [
+        "gemini-2.0-flash",  # Tu modelo más potente disponible
+        "gemini-flash-latest",  # El alias seguro
+        "gemini-pro-latest",  # Fallback a Pro
+    ]
+
+    for model_name in models_to_try:
+        try:
+            return try_generate(model_name, prompt)
+        except Exception as e:
+            print(f"⚠️ Falló {model_name}: {e}")
+
+    print("\n❌ TODOS LOS MODELOS FALLARON.")
+    return None
 
 
 if __name__ == "__main__":
-    print("--- 🧠 DWH Financial AI Assistant (Free Tier) ---")
+    print("--- 🧠 DWH Financial AI Assistant ---")
 
     if not configure_ai():
         exit(1)
 
-    # 1. Obtener conceptos
-    print("🔍 Buscando transacciones sin clasificar en BigQuery...")
+    print("🔍 Buscando transacciones...")
     concepts = get_uncategorized_concepts()
 
     if not concepts:
-        print("✅ ¡Genial! No hay transacciones pendientes de clasificar.")
+        print("✅ No hay nada pendiente de clasificar.")
         exit()
 
     print(f"📝 Encontrados {len(concepts)} conceptos.")
-
-    # 2. Obtener contexto
     context = get_categories_context()
 
-    # 3. Llamar a la IA
-    csv_content = generate_suggestions(concepts, context)
+    raw_response = generate_suggestions(concepts, context)
 
-    if csv_content:
-        # Guardar resultados
+    if raw_response:
+        # Limpieza de bloques de código markdown
+        clean_csv = raw_response.replace("```csv", "").replace("```", "").strip()
+
         with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
-            # Escribimos cabecera y contenido
             f.write(
                 "keyword,priority,grupo_categoria,categoria,subcategoria,entity_name\n"
             )
-            f.write(csv_content)
+            f.write(clean_csv)
 
         print(f"\n✅ Sugerencias generadas en: {OUTPUT_FILE}")
         print(
-            "👉 Abre el archivo, revisa y copia las líneas válidas a tu Google Sheet."
+            "👉 Abre el archivo, revisa las sugerencias y copia las filas válidas a tu Google Sheet 'dbt - mapping'."
         )
+    else:
+        print("\n🔥 No se pudo generar nada.")

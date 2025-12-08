@@ -7,6 +7,7 @@ from google.oauth2 import service_account
 from google.auth import default
 from dotenv import load_dotenv
 
+# --- CONFIGURACIÓN ---
 BASE_DIR = Path(__file__).resolve().parent.parent
 TARGET_CSV = BASE_DIR / "transformation" / "seeds" / "master_mapping.csv"
 
@@ -43,33 +44,54 @@ def sync_seeds():
     """
     )
 
-    if not SHEET_ID:
+    if not SHEET_ID or not SHEET_NAME:
         logging.error(
-            "❌ Error: No se encontró la variable MAPPING_SHEET_ID en el archivo .env"
+            "❌ Error: Faltan variables de entorno (MAPPING_SHEET_ID o MAPPING_SHEET_NAME)."
         )
         exit(1)
 
     logging.info(f"🔄 Conectando a Google Sheets...")
+    logging.info(f"📄 Sheet ID: {SHEET_ID[:10]}...")
+
+    # Imprimimos el nombre esperado (si es un secreto, saldrá ***, pero nos sirve de referencia)
+    logging.info(f"🎯 Buscando pestaña configurada: '{SHEET_NAME}'")
 
     try:
         creds = get_credentials()
         service = build("sheets", "v4", credentials=creds)
+        spreadsheet = service.spreadsheets()
 
+        # 1. OBTENER METADATOS (Paso de Diagnóstico Clave)
+        meta = spreadsheet.get(spreadsheetId=SHEET_ID).execute()
+        sheets = meta.get("sheets", [])
+        sheet_names = [s["properties"]["title"] for s in sheets]
+
+        logging.info(f"🔎 Pestañas REALES encontradas en el archivo: {sheet_names}")
+
+        # 2. VALIDAR
+        if SHEET_NAME not in sheet_names:
+            logging.error(f"❌ La pestaña configurada NO existe en el Google Sheet.")
+            logging.error(
+                f"👉 Asegúrate de que '{SHEET_NAME}' coincida exactamente con una de las de arriba."
+            )
+            return  # Salimos limpiamente para evitar el error 400
+
+        # 3. CONSTRUIR RANGO
         range_name = f"'{SHEET_NAME}'!A:Z"
 
-        logging.info(f"📄 Sheet ID: {SHEET_ID[:5]}...")
-        logging.info(f"📑 Leyendo rango: {range_name}")
-
-        sheet = service.spreadsheets()
-        result = sheet.values().get(spreadsheetId=SHEET_ID, range=range_name).execute()
+        # 4. DESCARGAR
+        result = (
+            spreadsheet.values().get(spreadsheetId=SHEET_ID, range=range_name).execute()
+        )
         rows = result.get("values", [])
 
         if not rows:
-            logging.warning("⚠️ La pestaña parece estar vacía o el rango es incorrecto.")
+            logging.warning("⚠️ La pestaña existe pero está vacía.")
             return
 
         logging.info(f"📥 Descargadas {len(rows)} filas.")
 
+        # 5. PROCESAMIENTO
         headers = rows[0]
         expected_cols = len(headers)
         raw_data = rows[1:]
@@ -84,7 +106,6 @@ def sync_seeds():
 
         df = pd.DataFrame(normalized_data, columns=headers)
 
-        # Limpieza de datos
         if "priority" in df.columns:
             df["priority"] = (
                 pd.to_numeric(df["priority"], errors="coerce").fillna(50).astype(int)
@@ -93,12 +114,10 @@ def sync_seeds():
         if "keyword" in df.columns:
             df["keyword"] = df["keyword"].astype(str).str.strip()
 
-        # Guardar
         TARGET_CSV.parent.mkdir(parents=True, exist_ok=True)
         df.to_csv(TARGET_CSV, index=False, encoding="utf-8")
 
-        logging.info(f"✅ Archivo guardado en: {TARGET_CSV}")
-        logging.info("🎉 Sincronización completada.")
+        logging.info(f"✅ Archivo guardado correctamente en: {TARGET_CSV}")
 
     except Exception as e:
         logging.error(f"🔥 Error crítico: {e}")

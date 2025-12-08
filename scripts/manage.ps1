@@ -9,7 +9,14 @@
     .\scripts\manage.ps1 dbt-refresh
 #>
 
-# --- 0. AUTO-ACTIVACIÓN CONDA (NUEVO) ---
+# --- 1. DEFINICIÓN DE PARÁMETROS (OBLIGATORIO: PRIMERA LÍNEA DE CÓDIGO) ---
+param (
+    [Parameter(Mandatory=$false)]
+    [ValidateSet("install", "run-ingestion", "clean", "help", "update-seeds", "ai-suggest", "dbt-refresh")]
+    [string]$Command = "help"
+)
+
+# --- 2. AUTO-ACTIVACIÓN CONDA ---
 # Nombre de tu entorno
 $CondaEnv = "dwhfinancial"
 
@@ -17,31 +24,24 @@ $CondaEnv = "dwhfinancial"
 if ($env:CONDA_DEFAULT_ENV -ne $CondaEnv) {
     Write-Host "[INFO] El entorno '$CondaEnv' no esta activo. Intentando activar..." -ForegroundColor Yellow
 
-    # Intenta activar usando el comando conda estándar
     try {
-        # Necesitamos invocar conda desde el shell, a veces requiere 'conda hook' en PS
-        # Esta es una forma simplificada que suele funcionar si conda está en el PATH
+        # Intentamos activar. Nota: Esto depende de cómo esté configurado PowerShell
         conda activate $CondaEnv
         if ($LASTEXITCODE -ne 0) { throw "Error activando" }
         Write-Host "[OK] Entorno activado." -ForegroundColor Green
     }
     catch {
-        Write-Warning "[AVISO] No se pudo activar Conda automaticamente. Asegurate de activarlo manual: 'conda activate $CondaEnv'"
+        # Si falla, no rompemos el script, solo avisamos
+        Write-Warning "[AVISO] No se pudo activar Conda automaticamente. Asegurate de estar en el entorno correcto."
     }
 }
 
-# --- 1. DEFINICIÓN DE PARÁMETROS ---
-param (
-    [Parameter(Mandatory=$false)]
-    [ValidateSet("install", "run-ingestion", "clean", "help", "update-seeds", "ai-suggest", "dbt-refresh")]
-    [string]$Command = "help"
-)
-
-# --- 2. CARGA DE VARIABLES DE ENTORNO (.env) ---
+# --- 3. CARGA DE VARIABLES DE ENTORNO (.env) ---
 $RootPath = Resolve-Path "$PSScriptRoot\.."
 if (Test-Path "$RootPath\.env") {
     Write-Host "[INFO] Cargando variables desde .env..." -ForegroundColor DarkGray
     Get-Content "$RootPath\.env" | ForEach-Object {
+        # Ignorar comentarios y líneas vacías
         if ($_ -match '^([^#=]+)=(.*)$') {
             $key = $matches[1].Trim()
             $value = $matches[2].Trim()
@@ -57,6 +57,7 @@ function Show-Help {
     Write-Host "  install         - Instala las dependencias de Python"
     Write-Host "  run-ingestion   - Ejecuta el pipeline de ingestión (Drive -> GCS)"
     Write-Host "  update-seeds    - Descarga el mapeo actualizado desde Google Sheets"
+    Write-Host "  ai-suggest      - Usa IA para clasificar gastos pendientes"
     Write-Host "  dbt-refresh     - Reconstruye todas las tablas dbt desde cero (Full Refresh)"
     Write-Host "  clean           - Limpia archivos temporales"
 }
@@ -88,11 +89,14 @@ if ($Command -eq "update-seeds") {
 if ($Command -eq "dbt-refresh") {
     Write-Host "[INFO] Ejecutando dbt Full Refresh..." -ForegroundColor Cyan
 
+    # Configuramos el directorio de perfiles automáticamente
     $env:DBT_PROFILES_DIR = Join-Path $RootPath "transformation"
 
+    # 1. Actualizar Seeds primero
     Write-Host "   > Cargando seeds (map_categories, master_mapping...)" -ForegroundColor Gray
     dbt seed --project-dir "$RootPath\transformation"
 
+    # 2. Ejecutar Full Refresh
     Write-Host "   > Reconstruyendo tablas..." -ForegroundColor Gray
     dbt run --full-refresh --project-dir "$RootPath\transformation"
 
@@ -108,7 +112,7 @@ if ($Command -eq "ai-suggest") {
     Write-Host "[INFO] Analizando transacciones sin clasificar con IA..." -ForegroundColor Cyan
     $ScriptPath = Join-Path $RootPath "scripts\ai_suggest.py"
     # Asegurar que las dependencias nuevas estén instaladas
-    pip install google-cloud-aiplatform --quiet
+    pip install google-generativeai --quiet
     python $ScriptPath
 }
 

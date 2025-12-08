@@ -24,7 +24,6 @@ OUTPUT_FILE = BASE_DIR / "suggested_mappings.csv"
 def configure_ai():
     if not GEMINI_API_KEY:
         print("❌ Error: Falta la variable GEMINI_API_KEY en el archivo .env")
-        print("ℹ️  Consíguela gratis en: https://aistudio.google.com/app/apikey")
         return False
 
     genai.configure(api_key=GEMINI_API_KEY)

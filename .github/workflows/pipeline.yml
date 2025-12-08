@@ -10,6 +10,7 @@ env:
   GCS_BUCKET_NAME: ${{ secrets.GCS_BUCKET_NAME }}
   DRIVE_PARENT_FOLDER_ID: ${{ secrets.DRIVE_PARENT_FOLDER_ID }}
   MAPPING_SHEET_ID: ${{ secrets.MAPPING_SHEET_ID }}
+  MAPPING_SHEET_NAME: ${{ secrets.MAPPING_SHEET_NAME }}
 
 jobs:
   run_full_process:

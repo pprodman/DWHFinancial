@@ -1,0 +1,19 @@
+# --- Core Data Processing ---
+pandas
+numpy
+openpyxl
+xlrd>=2.0.1
+
+# --- Google Cloud ---
+google-cloud-storage
+google-api-python-client
+google-auth
+
+# --- Transformation (dbt) ---
+dbt-core
+dbt-bigquery>=1.10.0
+
+# --- Calidad de Código y Utilidades (Opcional pero recomendado para optimizar) ---
+black      # Para formatear código Python automáticamente
+flake8     # Para detectar errores en Python
+sqlfluff   # Para formatear tu código SQL de dbt

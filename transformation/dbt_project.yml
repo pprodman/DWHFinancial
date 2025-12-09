@@ -1,5 +1,3 @@
-# dbt_project.yml
-
 name: 'mi_pipeline_bancario'
 version: '1.0.0'
 config-version: 2
@@ -18,9 +16,14 @@ clean-targets:
   - "target"
   - "dbt_packages"
 
-# Configuración por carpeta — ¡Cada capa escribe en su propio dataset!
+# Configuración de modelos
 models:
   mi_pipeline_bancario:
+    # --- ACTIVAR PERSISTENCIA DE DOCUMENTACIÓN (GLOBAL) ---
+    +persist_docs:
+      relation: true   # Descripción de la tabla
+      columns: true    # Descripción de cada columna
+
     A1_bronze:
       +materialized: incremental
       +unique_key: hash_id
@@ -37,8 +40,6 @@ models:
       +tags: ['gold', 'final']
       +schema: gold
 
-# Configuración para los seeds
 seeds:
   mi_pipeline_bancario:
-    # Todos los seeds se materializarán en el dataset 'mappings'
     +schema: mappings

@@ -1,0 +1,21 @@
+version: 2
+
+models:
+  - name: fct_transactions
+    description: "Tabla de hechos principal. Contiene todas las transacciones clasificadas jerárquicamente."
+    columns:
+      - name: hash_id
+        description: "PK única."
+        tests:
+          - unique
+          - not_null
+      - name: grupo
+        description: "Nivel 1 (Jerarquía Alta): Gastos Fijos, Variables, Ahorro, Ingresos..."
+      - name: categoria
+        description: "Nivel 2: Supermercado, Vivienda, Transporte..."
+      - name: subcategoria
+        description: "Nivel 3 (Detalle): Mercadona, Luz, Gasolina..."
+      - name: comercio
+        description: "Nombre limpio de la entidad (ej: 'Mercadona' en vez de 'MERCADONA S.A. CASTELLON')."
+      - name: importe_personal
+        description: "Importe ajustado a mi realidad financiera (50% de gastos compartidos)."

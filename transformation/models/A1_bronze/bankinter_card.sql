@@ -1,5 +1,3 @@
--- dbt_project/models/A1_bronze/bankinter_card.sql
-
 {{
   config(
     materialized = 'incremental',
@@ -15,7 +13,7 @@ SELECT
     importe,
     entidad,
     origen
-FROM {{ source('bronze_raw', 'revolut_account') }}
+FROM {{ source('bronze_raw', 'bankinter_card') }}
 
 {% if is_incremental() %}
   WHERE hash_id NOT IN (

@@ -1,0 +1,232 @@
+keyword,priority,grupo_categoria,categoria,subcategoria,entity_name
+BASE TECHNOLOGY,10,Ingresos,Nómina,Salario Base,Basetis
+BRIDGE BROKER,10,Ingresos,Nómina,Salario Base,Bridge Broker
+A.E.A.T.,10,Ingresos,Devoluciones,Hacienda,Agencia Tributaria
+DEVOLUCIONES TRIBUTARIA,10,Ingresos,Devoluciones,Hacienda,Agencia Tributaria
+FOGASA,10,Ingresos,Nómina,Indemnizaciones,FOGASA
+SALDO A FAVOR,50,Ingresos,Otros Ingresos,Regularización,Bankinter
+LIQ. PROPIA CTA,50,Ingresos,Ingresos Pasivos,Intereses,Bankinter
+Promo i14,50,Ingresos,Otros Ingresos,,Revolut
+Perk compensation,50,Ingresos,Otros Ingresos,,Revolut
+Reward for,50,Ingresos,Otros Ingresos,,Revolut
+LIQUID. CUOTA PTMO,10,Gastos Fijos,Vivienda,Hipoteca,Bankinter Hipoteca
+IMP DISP PT,10,Movimientos Operativos,Préstamos y Financiación ,Disposición de Capital,Bankinter Hipoteca
+IMP INIC PT,10,Movimientos Operativos,Préstamos y Financiación ,Disposición de Capital,Bankinter Hipoteca
+LIQUID. CUOTA,10,Gastos Fijos,Vivienda,Hipoteca,Bankinter Hipoteca
+FACSA,20,Gastos Fijos,Suministros,Agua,Facsa
+IBERDROLA,20,Gastos Fijos,Suministros,Luz,Iberdrola
+ENDESA,20,Gastos Fijos,Suministros,Luz,Endesa
+JAZZTEL,20,Gastos Fijos,Suministros,Internet y Teléfono,Jazztel
+DIGI,20,Gastos Fijos,Suministros,Internet y Teléfono,Digi
+AMAZON PRIME,10,Gastos Fijos,Suscripciones,Streaming,Amazon Prime
+SPOTIFY,20,Gastos Fijos,Suscripciones,Streaming,Spotify
+NETFLIX,20,Gastos Fijos,Suscripciones,Streaming,Netflix
+IYZICO,30,Gastos Fijos,Suscripciones,Streaming,Turgame
+TURGAME,30,Gastos Fijos,Suscripciones,Streaming,Turgame
+GELSIN,30,Gastos Fijos,Suscripciones,Streaming,Turgame
+PAYBOX,30,Gastos Fijos,Suscripciones,Streaming,Turgame
+Conversión a TRY,40,Gastos Fijos,Suscripciones,Streaming,Disney+
+TRADINGVIEW,20,Gastos Fijos,Suscripciones,Software y Apps,TradingView
+UDEMY,20,Gastos Variables,Formación,Cursos Online,Udemy
+BANKINTER SEGUROS,10,Gastos Fijos,Seguros,Vida/Hogar,Bankinter Seguros
+GENERALI,20,Gastos Fijos,Seguros,Vida/Hogar,Generali Seguros
+MAPFRE,20,Gastos Fijos,Seguros,Vida/Hogar,Mapfre Seguros
+ZURICH,20,Gastos Fijos,Seguros,Vehículo,Zurich Seguros
+PRIMA SEGURO,20,Gastos Fijos,Seguros,Vida/Hogar,Prima Seguros
+AYUNTAMIENTO DE CASTELLON,20,Gastos Fijos,Impuestos y Tasas,Vivienda (IBI/Basuras),Ayuntamiento de Castellón
+GENERALITAT VALENCIANA,20,Gastos Fijos,Impuestos y Tasas,Tasas Administrativas,Generalitat Valenciana
+GLOVAL VALUATION,20,Movimientos Operativos,Trámites y Escrituras,Tasación,Gloval Valuation
+COLEGIO DE REGISTRADORES,20,Movimientos Operativos,Trámites y Escrituras,Registro y Notaría ,Colegio de Registradores
+Verificaciones,20,Movimientos Operativos,Trámites y Escrituras,Tasación,Verificaciones y Certificaciones
+CONSUM,20,Gastos Fijos,Alimentación,Supermercado,Consum
+MERCADONA,20,Gastos Fijos,Alimentación,Supermercado,Mercadona
+ALCAMPO,20,Gastos Fijos,Alimentación,Supermercado,Alcampo
+ALDI,20,Gastos Fijos,Alimentación,Supermercado,Aldi
+LIDL,20,Gastos Fijos,Alimentación,Supermercado,Lidl
+BON AREA,20,Gastos Fijos,Alimentación,Supermercado,Bon Àrea
+MAS Y MAS,20,Gastos Fijos,Alimentación,Supermercado,Mas y Mas
+SPAR,20,Gastos Fijos,Alimentación,Supermercado,Spar
+CASH CASTELLON,20,Gastos Fijos,Alimentación,Supermercado,Cash Castellón
+UDACO,30,Gastos Fijos,Alimentación,Supermercado,Udaco
+MARKET CASTELLO,30,Gastos Fijos,Alimentación,Supermercado,Market Castelló
+CARNICAS JUGOSA,30,Gastos Fijos,Alimentación,Mercado/Tienda local,Carnicas Jugosa
+FRIGORIFICOS SANZ,30,Gastos Fijos,Alimentación,Mercado/Tienda local,Frigorificos Sanz
+ENCURTIDOS JOYA,30,Gastos Fijos,Alimentación,Mercado/Tienda local,Encurtidos Joya
+PANADERIA MATEU,40,Gastos Fijos,Alimentación,Mercado/Tienda local,Els Ibarsos
+PANADERIA MONICA,40,Gastos Fijos,Alimentación,Mercado/Tienda local,Panadería Mónica
+PANADERIA VIVES,40,Gastos Fijos,Alimentación,Mercado/Tienda local,Cafetería Vives
+PANADERIA,50,Gastos Fijos,Alimentación,Mercado/Tienda local,Panadería Local
+FORN,40,Gastos Fijos,Alimentación,Mercado/Tienda local,Panadería Local
+TERRETA DOLCA,40,Gastos Fijos,Alimentación,Mercado/Tienda local,Terreta Dolça
+CAFE DROMEDARIO,30,Gastos Fijos,Alimentación,Café e Insumos,Café Dromedario
+NOVADELTA,30,Gastos Fijos,Alimentación,Café e Insumos,Cafés Delta
+SHADES OF COFFEE,30,Gastos Variables,Compras,Menaje y Cocina,Shades of Coffee
+MAXICOFFEE,30,Gastos Variables,Compras,Menaje y Cocina,MaxiCoffee
+AMAZON,50,Gastos Variables,Compras,Compras Online (Genérico),Amazon
+AMZN,50,Gastos Variables,Compras,Compras Online (Genérico),Amazon
+FINANCIERA EL CORTE,20,Gastos Variables,Compras,Grandes Almacenes,El Corte Inglés
+EL CORTE INGLES,30,Gastos Variables,Compras,Grandes Almacenes,El Corte Inglés
+ALIEXPRESS,20,Gastos Variables,Compras,Compras Online (Genérico),AliExpress
+ALIPAY,20,Gastos Variables,Compras,Compras Online (Genérico),AliExpress
+MIRAVIA,20,Gastos Variables,Compras,Compras Online (Genérico),Miravia
+WALLAPOP,20,Gastos Variables,Compras,Compras Online (Genérico),Wallapop
+G2A,20,Gastos Variables,Compras,Compras Online (Genérico),G2A
+G2G,20,Gastos Variables,Compras,Compras Online (Genérico),G2G
+RIOT GAMES,20,Gastos Variables,Compras,Compras Online (Genérico),Riot Games
+MEDIA MARKT,20,Gastos Variables,Compras,Tecnología y Electrónica,Media Markt
+PCCOMPONENTES,20,Gastos Variables,Compras,Tecnología y Electrónica,PcComponentes
+COOLMOD,20,Gastos Variables,Compras,Tecnología y Electrónica,Coolmod
+SAMSUNG,20,Gastos Variables,Compras,Tecnología y Electrónica,Samsung
+FNAC,20,Gastos Variables,Compras,Tecnología y Electrónica,Fnac
+XIAOMI,20,Gastos Variables,Compras,Tecnología y Electrónica,XiaoMi
+MI.COM,20,Gastos Variables,Compras,Tecnología y Electrónica,XiaoMi
+COMPUCENTER,20,Gastos Variables,Compras,Tecnología y Electrónica,Compucenter
+OMOTON,30,Gastos Variables,Compras,Tecnología y Electrónica,Omoton
+GOVEE,20,Gastos Variables,Compras,Tecnología y Electrónica,Govee
+LEROY MERLIN,20,Gastos Variables,Compras,Hogar y Decoración,Leroy Merlin
+IKEA,20,Gastos Variables,Compras,Hogar y Decoración,Ikea
+JYSK,20,Gastos Variables,Compras,Hogar y Decoración,Jysk
+MUY MUCHO,20,Gastos Variables,Compras,Hogar y Decoración,Muy Mucho
+BAUHAUS,20,Gastos Variables,Compras,Hogar y Decoración,Bauhaus
+SANTANDER CONSUMER,25,Gastos Variables,Compras,Hogar y Decoración,Bauhaus (Financiación)
+FERRETERIA ESCRIG,30,Gastos Variables,Compras,Bricolaje y Jardín,Ferreteria Escrig
+FERRETERIA,40,Gastos Variables,Compras,Bricolaje y Jardín,Ferretería Local
+LEKUE,30,Gastos Variables,Compras,Menaje y Cocina,Lekué
+DECATHLON,20,Gastos Variables,Compras,Deportes,Decathlon
+CUSTOM FIGHTER,20,Gastos Variables,Compras,Deportes,Custom Fighter
+TREKKINN,20,Gastos Variables,Compras,Deportes,Trekkinn
+DRUNI,20,Gastos Variables,Salud y Cuidado,Cosmética e Higiene,Druni
+PRIMOR,20,Gastos Variables,Salud y Cuidado,Cosmética e Higiene,Primor
+PELUQUERIA,50,Gastos Variables,Salud y Cuidado,Cuidado Personal,Peluquería
+LEBLANC,30,Gastos Variables,Salud y Cuidado,Cuidado Personal,Le Blanc Peluquería
+LACOLADACS,30,Gastos Variables,Servicios Hogar,Lavandería y Tintorería,La Colada CS
+CALZEDONIA,20,Gastos Variables,Compras,Ropa y Accesorios,Calzedonia
+SPRINGFIELD,20,Gastos Variables,Compras,Ropa y Accesorios,Springfield
+JACK & JONES,20,Gastos Variables,Compras,Ropa y Accesorios,Jack & Jones
+SINGULARU,20,Gastos Variables,Compras,Ropa y Accesorios,Singularu
+ETAM,20,Gastos Variables,Compras,Ropa y Accesorios,Etam
+O-BI OINETAKOAK,20,Gastos Variables,Compras,Ropa y Accesorios,O-BI
+ADRIVI,20,Gastos Variables,Compras,Ropa y Accesorios,Adrivi
+ANTONIA ALEJANDRA,20,Gastos Variables,Compras,Ropa y Accesorios,Antonia Alejandra
+HAZELNUT,20,Gastos Variables,Compras,Ropa y Accesorios,Hazelnut
+TODOJUGUETE,20,Gastos Variables,Compras,Juguetes y Juegos,Todojuguete
+ABRACADABRA,20,Gastos Variables,Compras,Juguetes y Juegos,Abracadabra
+VICENTE MIRAVETE,20,Gastos Variables,Ocio y Restauración,Cafeterías,Vicente Miravete
+BABEL LLIBRERIA,30,Gastos Variables,Compras,Libros y Papelería,Babel
+BAZAR,50,Gastos Variables,Compras,Bazares y Multiprecio,Bazar
+JUPING WU,30,Gastos Variables,Compras,Bazares y Multiprecio,Juping Wu
+FARMACIA,50,Gastos Fijos,Salud y Cuidado,Farmacia,Farmacia
+FARMACIA BALLESTER,20,Gastos Fijos,Salud y Cuidado,Farmacia,Farmacia Ballester Badenes
+FARMAFEROLES,20,Gastos Fijos,Salud y Cuidado,Farmacia,Farmaferoles
+FARMAFY,20,Gastos Fijos,Salud y Cuidado,Farmacia,Farmafy
+FARMATOP,20,Gastos Fijos,Salud y Cuidado,Farmacia,Farmatop
+FARMACIASDIRECT,20,Gastos Fijos,Salud y Cuidado,Farmacia,Farmaciasdirect
+KIWOKO,20,Gastos Variables,Mascotas,Alimentación y Accesorios,Kiwoko
+ZOOPLUS,20,Gastos Variables,Mascotas,Alimentación y Accesorios,Zooplus
+VETERINARIA,30,Gastos Variables,Mascotas,Alimentación y Accesorios,Veterinario
+PROZIS,20,Gastos Variables,Salud y Cuidado,Nutrición y Suplementos,Prozis
+RYANAIR,20,Gastos Variables,Viajes,Billetes (Avión/Tren),Ryanair
+BOOKING,20,Gastos Variables,Viajes,Alojamiento,Booking.com
+AIRBNB,20,Gastos Variables,Viajes,Alojamiento,Airbnb
+HOTEL,30,Gastos Variables,Viajes,Alojamiento,Hotel
+AEROPORTO,30,Gastos Variables,Viajes,Gastos en Destino,Aeropuerto
+AEROPUERTO,30,Gastos Variables,Viajes,Gastos en Destino,Aeropuerto
+SOUVENIRS,30,Gastos Variables,Viajes,Gastos en Destino,Souvenirs
+RENFE,20,Gastos Variables,Viajes,Billetes (Avión/Tren),Renfe
+METRO,30,Gastos Variables,Transporte,Transporte Público,Metro
+EUSKOTREN,30,Gastos Variables,Viajes,Billetes (Avión/Tren),Euskotren
+BIZKAIBUS,30,Gastos Variables,Transporte,Transporte Público,Bizkaibus
+TOURNE,30,Gastos Variables,Transporte,,Tourne
+TELPARK,20,Gastos Variables,Transporte,Parking y Peajes,Telpark
+EASYPARK,20,Gastos Variables,Transporte,Parking y Peajes,EasyPark
+PARKIMETER,20,Gastos Variables,Transporte,Parking y Peajes,Parkimeter
+PAVAPARK,20,Gastos Variables,Transporte,Parking y Peajes,Pavapark
+GESTOPARK,20,Gastos Variables,Transporte,Parking y Peajes,Gestopark
+SITVAL ITV,20,Gastos Variables,Transporte,Trámites Vehiculo,Sitval ITV
+ITV,20,Gastos Variables,Transporte,Trámites Vehiculo,Sitval ITV
+CASTELLON SALERA,30,Gastos Variables,Compras,Grandes Almacenes,CC Salera
+TEATRO OLYMPIA,20,Gastos Variables,Ocio y Restauración,Cultura y Espectáculos,Teatro Olympia
+AUDITORIO,20,Gastos Variables,Ocio y Restauración,Cultura y Espectáculos,Auditorio
+Luckia,20,Ahorro e Inversión,,,Luckia
+RESTAURANTE,50,Gastos Variables,Ocio y Restauración,Restaurantes y Bares,Restaurante Genérico
+CAFETERIA,50,Gastos Variables,Ocio y Restauración,Cafeterías,Cafetería Genérica
+BAR,60,Gastos Variables,Ocio y Restauración,Cafeterías,Bar Genérico
+KEBAB,30,Gastos Variables,Ocio y Restauración,Fast Food,Kebab
+VIVES 1908,10,Gastos Variables,Ocio y Restauración,Cafeterías,Cafetería Vives
+LA GOLETA,10,Gastos Variables,Ocio y Restauración,Restaurantes y Bares,La Goleta
+EL COLMADO,10,Gastos Variables,Ocio y Restauración,Restaurantes y Bares,El Colmado
+LA TERRACITA,10,Gastos Variables,Ocio y Restauración,Restaurantes y Bares,La Terracita
+ARRE,10,Gastos Variables,Ocio y Restauración,Restaurantes y Bares,Arre
+SHOKAI,10,Gastos Variables,Ocio y Restauración,Restaurantes y Bares,Shokai Sushi
+EL PARRAL,10,Gastos Variables,Ocio y Restauración,Restaurantes y Bares,El Parral
+LA BELEPOC,10,Gastos Variables,Ocio y Restauración,Restaurantes y Bares,La Belepoc
+CASA PATACONA,10,Gastos Variables,Ocio y Restauración,Restaurantes y Bares,Casa Patacona
+LA DOLCE VITA,10,Gastos Variables,Ocio y Restauración,Restaurantes y Bares,La Dolce Vita
+LA REDONA,10,Gastos Variables,Ocio y Restauración,Restaurantes y Bares,La Redona
+LA SELECTA,10,Gastos Variables,Ocio y Restauración,Restaurantes y Bares,La Selecta
+LA TOSTADORA,10,Gastos Variables,Ocio y Restauración,Cafeterías,La Tostadora
+EL MEJILLON,10,Gastos Variables,Ocio y Restauración,Restaurantes y Bares,El Mejillón
+CAN VILALTA,10,Gastos Variables,Ocio y Restauración,Restaurantes y Bares,Can Vilalta
+BELLA CIAO,10,Gastos Variables,Ocio y Restauración,Restaurantes y Bares,Bella Ciao
+BOCALINDA,10,Gastos Variables,Ocio y Restauración,Restaurantes y Bares,Bocalinda
+CARISMA NATURAL,10,Gastos Variables,Ocio y Restauración,Restaurantes y Bares,Carisma Natural
+BALUARD,10,Gastos Variables,Ocio y Restauración,Restaurantes y Bares,Baluard
+BAKELITO,10,Gastos Variables,Ocio y Restauración,Restaurantes y Bares,Bakelito
+ASUABERRI,10,Gastos Variables,Ocio y Restauración,Restaurantes y Bares,Asuaberri
+ARVOBILBAO,10,Gastos Variables,Ocio y Restauración,Restaurantes y Bares,Arvo Bilbao
+CENTOLLOS,10,Gastos Variables,Ocio y Restauración,Restaurantes y Bares,Centollos Bilbao
+LA DAMA BLANCA,10,Gastos Variables,Ocio y Restauración,Cafeterías,La Dama Blanca
+VENTA GUADALEST,10,Gastos Variables,Ocio y Restauración,Restaurantes y Bares,Venta Guadalest
+INTUR,10,Gastos Variables,Ocio y Restauración,Restaurantes y Bares,Intur
+MASET,10,Gastos Variables,Ocio y Restauración,Restaurantes y Bares,El Maset
+CASA ELENA,10,Gastos Variables,Ocio y Restauración,Restaurantes y Bares,Casa Elena
+CASA FRAN,10,Gastos Variables,Ocio y Restauración,Restaurantes y Bares,Casa Fran
+CASA MINGUITO,10,Gastos Variables,Ocio y Restauración,Restaurantes y Bares,Casa Minguito
+GARCIA GOURMET,10,Gastos Variables,Ocio y Restauración,Cafeterías,Garcia Gourmet
+FLOR CENT,10,Gastos Variables,Ocio y Restauración,Cafeterías,Flor de la Vall
+LYONBURGO,10,Gastos Variables,Ocio y Restauración,Fast Food,Lyonburgo
+MESON,10,Gastos Variables,Ocio y Restauración,Restaurantes y Bares,Mesón
+LORCA 41,10,Gastos Variables,Ocio y Restauración,Restaurantes y Bares,Lorca 41
+ROBERTS SMASH,10,Gastos Variables,Ocio y Restauración,Restaurantes y Bares,Roberts Smash
+SABOR ZULIANO,10,Gastos Variables,Ocio y Restauración,Restaurantes y Bares,Sabor Zuliano
+SALT IN CAKE,10,Gastos Variables,Ocio y Restauración,Cafeterías,Salt in Cake
+SANTA GLORIA,10,Gastos Variables,Ocio y Restauración,Cafeterías,Santa Gloria
+SIROPE,10,Gastos Variables,Ocio y Restauración,Cafeterías,Sirope
+PANCHO,10,Gastos Variables,Ocio y Restauración,Restaurantes y Bares,Panchos
+BOTAVARA,10,Gastos Variables,Ocio y Restauración,Restaurantes y Bares,Botavara
+Parasztkonyha,10,Gastos Variables,Ocio y Restauración,Restaurantes y Bares,Parasztkonyha
+Budapest Coffee,10,Gastos Variables,Ocio y Restauración,Cafeterías,Budapest Coffee
+La Movida,10,Gastos Variables,Ocio y Restauración,Restaurantes y Bares,La Movida
+Retro Lángos,10,Gastos Variables,Ocio y Restauración,Restaurantes y Bares,Retro Lángos
+HELADERIA,30,Gastos Variables,Ocio y Restauración,Heladerías y Horchaterías,Heladería
+JIJONENCOS,30,Gastos Variables,Ocio y Restauración,Heladerías y Horchaterías,Jijonencos
+HORCHATERIA,30,Gastos Variables,Ocio y Restauración,Heladerías y Horchaterías,Horchatería
+ELS SARIERS,30,Gastos Variables,Ocio y Restauración,Heladerías y Horchaterías,Els Sariers
+MY SWEET,30,Gastos Variables,Ocio y Restauración,Cafeterías,My Sweet
+OH MY BOWL,30,Gastos Variables,Ocio y Restauración,Cafeterías,Oh My Bowl
+PINGšINS,30,Gastos Variables,Ocio y Restauración,Fast Food,Pingüins
+JALEO,10,Gastos Variables,Ocio y Restauración,Ocio Nocturno,Jaleo
+BINANCE,10,Ahorro e Inversión,Inversión,Criptomonedas,Binance
+COINBASE,10,Ahorro e Inversión,Inversión,Criptomonedas,Coinbase
+KUCOIN,10,Ahorro e Inversión,Inversión,Criptomonedas,Kucoin
+Finlux Tech,10,Ahorro e Inversión,Inversión,Criptomonedas,Kucoin
+PAYSAFE,20,Ahorro e Inversión,Inversión,Criptomonedas,Paysafe
+RECIBO PLATINUM,10,Movimientos Operativos,Tarjetas,Liquidación Tarjeta,Bankinter
+VISA CLASICA,10,Movimientos Operativos,Tarjetas,Liquidación Tarjeta,Bankinter
+PROVISION FONDO,10,Movimientos Operativos,Trámites y Escrituras,Provisión de Fondos,Bankinter
+COM APER PT,10,Movimientos Operativos,Préstamos y Financiación ,Disposición de Capital,Bankinter
+COM. USO REDES,10,Movimientos Operativos,Comisiones Bancarias,Cambio Divisa y Redes,Bankinter
+COMISIÓN MANTENIMIENTO,10,Movimientos Operativos,Comisiones Bancarias,Mantenimiento Cuenta,Bankinter
+REVOLUT,10,Movimientos Operativos,Transferencias,Recarga Tarjeta,Revolut
+BNEXT,10,Movimientos Operativos,Transferencias,Recarga Tarjeta,Bnext
+CAJA,20,Movimientos Operativos,Efectivo,Cajero,Cajero
+CAJERO,20,Movimientos Operativos,Efectivo,Cajero,Cajero
+LLEDO AMOROS,10,Movimientos Operativos,Transferencias,Gastos Compartidos,Lledó
+NURIA AGUT,10,Movimientos Operativos,Obras e Inversión Real,Obras Grandes,Nuria Agut
+RESTORE,10,Movimientos Operativos,Obras e Inversión Real,Obras Grandes,Restore Edificaciones
+GEOTECNIA,10,Movimientos Operativos,Obras e Inversión Real,Obras Grandes,Geotecnia
+GeoVal,10,Movimientos Operativos,Obras e Inversión Real,Obras Grandes,Geotecnia
+PAGO BIZUM,60,Movimientos Operativos,Transferencias,Bizum (Ocio/Ajustes),Bizum
+TRANSFERENCIA,60,Movimientos Operativos,Transferencias,Transferencias a terceros,Transferencia
+TRANSF,60,Movimientos Operativos,Transferencias,Transferencias a terceros,Transferencia
+TRANS,60,Movimientos Operativos,Transferencias,Transferencias a terceros,Transferencia

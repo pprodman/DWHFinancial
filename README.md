@@ -12,21 +12,21 @@
 
 </div>
 
-## About
+## 📖 About
 
-This repository hosts the development and maintenance of a personal Data Warehouse for financial analysis. It is designed to centralize, clean, and transform banking data from multiple sources into a unified analytical layer ready for visualization.
+This repository hosts the development and maintenance of a **personal Data Warehouse** for financial analysis. It is designed to centralize, clean, and transform banking data from multiple sources into a unified analytical layer ready for visualization.
 
 Key components include:
 
-- **Ingestion Engine**: Python scripts for extracting data from Google Drive (Excel) and loading it into Google Cloud Storage (GCS) and BigQuery.
+- 🚀 **Ingestion Engine**: Python scripts for extracting data from Google Drive (Excel) and loading it into Google Cloud Storage (GCS) and BigQuery.
 
-- **Transformation Logic**: dbt Core models that implement business logic, categorization, and data cleaning.
+- ⚙️ **Transformation Logic**: dbt Core models that implement business logic, categorization, and data cleaning.
 
-- **Categorization Intelligence**: A hybrid system using keyword mapping and AI (Gemini) to classify transactions hierarchically.
+- 🧠 **Categorization Intelligence**: A hybrid system using keyword mapping and AI (Gemini) to classify transactions hierarchically.
 
-- **Gold Layer**: Final mart tables optimized for BI tools like Looker Studio.
+- 📊 **Gold Layer**: Final mart tables optimized for BI tools like Looker Studio.
 
-### Technologies used
+### 🛠️ Technologies used
 
 <!-- CATEGORÍA 1: Cloud & Storage -->
 #### Cloud & Storage
@@ -45,7 +45,7 @@ Key components include:
 ![GitHub Actions](https://img.shields.io/badge/github%20actions-%232671E5.svg?style=for-the-badge&logo=githubactions&logoColor=white)
 ![Gemini AI](https://img.shields.io/badge/Gemini_AI-8E75B2?style=for-the-badge&logo=googlegemini&logoColor=white)
 
-### Architecture
+## 🏗️ Architecture
 
 This project follows a modern ELT (Extract, Load, Transform) approach:
 
@@ -88,29 +88,14 @@ graph TD
     F -->|Connector| G
 ```
 
-### Architecture
-
-This project follows a modern ELT (Extract, Load, Transform) approach:
-
-```
-graph LR
-    A[Google Drive\n(Excels)] -->|Python Ingestion| B[Google Cloud Storage\n(JSONL)]
-    B -->|External Tables| C[BigQuery\n(Bronze Raw)]
-    D[Google Sheets\n(Cash & Mapping)] -->|External Tables| C
-    C -->|dbt Core| E[BigQuery\n(Silver Layer)]
-    E -->|dbt Core| F[BigQuery\n(Gold Layer)]
-    F -->|Connector| G[Looker Studio]
-```
-
-
-## Getting Started
+## 🚀 Getting Started
 
 This guide will walk you through setting up your local environment for development and testing.
 
 
 > [!NOTE]
 > Prerequisites include:
-> 1. **Python**: This project requires Python version 3.11+.
+> 1. **Python**: This project requires Python version `3.11+`.
 > 2. **Google Cloud Credentials**: A Service Account JSON key with permissions for BigQuery, Storage, and Drive API. You can download this from your Google Cloud Console under `APIs & Services > Credentials`.
 > 3. **Gemini API Key**: (Optional) For AI-powered categorization features.
 
@@ -121,9 +106,8 @@ This guide will walk you through setting up your local environment for developme
 
 Clone the repository and install dependencies using the helper script.
 
-Install Python dependencies
-
 ```bash
+# Install Python dependencies
 .\scripts\manage.ps1 install
 ```
 
@@ -159,23 +143,20 @@ Use the `manage.ps1` script as your command center:
 .\scripts\manage.ps1 dbt-refresh
 ```
 
-### Project Structure
+## 📂 Project Structure
 
-ingestion/: Python scripts for data extraction and loading.
+```csv
+.
+├── ingestion/                  # Python scripts for data extraction and loading
+│   └── config/                 # JSON configuration for bank file parsing
+├── transformation/             # dbt project folder
+│   ├── models/                 # SQL logic for Bronze, Silver, and Gold layers
+│   ├── seeds/                  # CSV files for categorization rules (master_mapping.csv)
+│   └── macros/                 # Jinja functions for logic reuse (categorize_transaction)
+└── scripts/                    # PowerShell and Python utilities for local management and AI
+```
 
-config/: JSON configuration for bank file parsing.
-
-transformation/: dbt project folder.
-
-models/: SQL logic for Bronze, Silver, and Gold layers.
-
-seeds/: CSV files for categorization rules (master_mapping.csv).
-
-macros/: Jinja functions for logic reuse (categorize_transaction).
-
-scripts/: PowerShell and Python utilities for local management and AI features.
-
-Next tasks to include
+## ✅ Next Tasks
 
 [x] Implement hierarchical categorization (Group > Category > Subcategory).
 
@@ -183,7 +164,7 @@ Next tasks to include
 
 [x] Automate Google Sheets mapping synchronization.
 
-[ ] Create data quality tests for silver models.
+[ ] Create data quality tests for `silver` models.
 
 [ ] Add visualization for monthly budget vs actuals.
 

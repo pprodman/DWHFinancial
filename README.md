@@ -6,7 +6,7 @@
 
 
 
-<h1>DWH Financial Data Warehouse</h1>
+<h1>Financial Data Warehouse</h1>
 
 [![License](https://img.shields.io/badge/License-View%20File-orange?style=for-the-badge)](LICENSE) [![Help Wanted Issues](https://img.shields.io/badge/Help%20Wanted-Contributions%20Welcome-brightgreen?style=for-the-badge)](https://github.com/itdevelopment-galenicum/DWHGalenicum/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22) [![Documentation](https://img.shields.io/badge/Documentation-Read%20Here-0077b6?style=for-the-badge)](https://sites.google.com/galenicum.com/galenicum-dlh-documentation/basetis-documentation)
 
@@ -31,6 +31,7 @@ Key components include:
 <!-- CATEGORÍA 1: Cloud & Storage -->
 #### Cloud & Storage
 ![Google Cloud](https://img.shields.io/badge/Google_Cloud-4285F4?style=for-the-badge&logo=google-cloud&logoColor=white)
+![Google Drive](https://img.shields.io/badge/Google%20Drive-4285F4?style=for-the-badge&logo=googledrive&logoColor=white)
 ![BigQuery](https://img.shields.io/badge/BigQuery-669DF6?style=for-the-badge&logo=googlebigquery&logoColor=white)
 
 <!-- CATEGORÍA 2: ELT & Transformación -->
@@ -40,8 +41,9 @@ Key components include:
 ![dbt Core](https://img.shields.io/badge/dbt_Core-FF694B?style=for-the-badge&logo=dbt&logoColor=white)
 ![Google Sheets](https://img.shields.io/badge/Google%20Sheets-34A853?style=for-the-badge&logo=google-sheets&logoColor=white)
 
+
 <!-- CATEGORÍA 3: Orquestación & Inteligencia -->
-#### *Orchestration & AI
+#### Orchestration & AI
 ![GitHub Actions](https://img.shields.io/badge/github%20actions-%232671E5.svg?style=for-the-badge&logo=githubactions&logoColor=white)
 ![Gemini AI](https://img.shields.io/badge/Gemini_AI-8E75B2?style=for-the-badge&logo=googlegemini&logoColor=white)
 

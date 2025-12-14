@@ -9,12 +9,25 @@ from dotenv import load_dotenv
 
 # --- CONFIGURACIÓN ---
 BASE_DIR = Path(__file__).resolve().parent.parent
-TARGET_CSV = BASE_DIR / "transformation" / "seeds" / "master_mapping.csv"
+SEEDS_DIR = BASE_DIR / "transformation" / "seeds"
 
 load_dotenv(BASE_DIR / ".env")
 
-SHEET_ID = os.environ.get("MAPPING_SHEET_ID")
-SHEET_NAME = os.environ.get("MAPPING_SHEET_NAME")
+SPREADSHEET_ID = os.environ.get("MAPPING_SHEET_ID")
+
+# LISTA DE PESTAÑAS A SINCRONIZAR
+# -----------------------------------------------------------------------------
+# Formato:
+# {
+#   "env_var": Nombre de la variable en .env donde defines el nombre de la pestaña,
+#   "default_name": Nombre de la pestaña en Excel si no existe la variable .env,
+#   "file_name": Nombre del archivo CSV que se generará en la carpeta seeds
+# }
+# -----------------------------------------------------------------------------
+SHEETS_TO_SYNC = [
+    {"env_var": "MAPPING_SHEET_NAME", "file_name": "master_mapping.csv"},
+    {"env_var": "BIZUM_SHEET_NAME", "file_name": "bizum_directory.csv"},
+]
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(message)s", datefmt="%H:%M:%S"
@@ -28,70 +41,37 @@ def get_credentials():
             creds_path, scopes=["https://www.googleapis.com/auth/spreadsheets.readonly"]
         )
     else:
-        logging.info("⚠️ Usando Application Default Credentials (ADC)")
         creds, _ = default(
             scopes=["https://www.googleapis.com/auth/spreadsheets.readonly"]
         )
         return creds
 
 
-def sync_seeds():
-    print(
-        f"""
-    ========================================
-       🌱 DWH FINANCIAL - SEED SYNC
-    ========================================
+def download_and_save_sheet(service, spreadsheet_id, sheet_name, target_file):
     """
-    )
+    Función auxiliar que descarga una única pestaña y la guarda como CSV.
+    Aplica limpieza básica si las columnas existen.
+    """
 
-    if not SHEET_ID or not SHEET_NAME:
-        logging.error(
-            "❌ Error: Faltan variables de entorno (MAPPING_SHEET_ID o MAPPING_SHEET_NAME)."
-        )
-        exit(1)
+    logging.info(f"🔹 Procesando pestaña: '{sheet_name}' -> {target_file.name}")
 
-    logging.info(f"🔄 Conectando a Google Sheets...")
-    logging.info(f"📄 Sheet ID: {SHEET_ID[:10]}...")
-
-    # Imprimimos el nombre esperado (si es un secreto, saldrá ***, pero nos sirve de referencia)
-    logging.info(f"🎯 Buscando pestaña configurada: '{SHEET_NAME}'")
+    range_name = f"'{sheet_name}'!A:Z"
 
     try:
-        creds = get_credentials()
-        service = build("sheets", "v4", credentials=creds)
-        spreadsheet = service.spreadsheets()
-
-        # 1. OBTENER METADATOS (Paso de Diagnóstico Clave)
-        meta = spreadsheet.get(spreadsheetId=SHEET_ID).execute()
-        sheets = meta.get("sheets", [])
-        sheet_names = [s["properties"]["title"] for s in sheets]
-
-        logging.info(f"🔎 Pestañas REALES encontradas en el archivo: {sheet_names}")
-
-        # 2. VALIDAR
-        if SHEET_NAME not in sheet_names:
-            logging.error(f"❌ La pestaña configurada NO existe en el Google Sheet.")
-            logging.error(
-                f"👉 Asegúrate de que '{SHEET_NAME}' coincida exactamente con una de las de arriba."
-            )
-            return  # Salimos limpiamente para evitar el error 400
-
-        # 3. CONSTRUIR RANGO
-        range_name = f"'{SHEET_NAME}'!A:Z"
-
-        # 4. DESCARGAR
+        # Descargar datos
         result = (
-            spreadsheet.values().get(spreadsheetId=SHEET_ID, range=range_name).execute()
+            service.spreadsheets()
+            .values()
+            .get(spreadsheetId=spreadsheet_id, range=range_name)
+            .execute()
         )
         rows = result.get("values", [])
 
         if not rows:
-            logging.warning("⚠️ La pestaña existe pero está vacía.")
+            logging.warning(f"⚠️ La pestaña '{sheet_name}' existe pero está vacía.")
             return
 
-        logging.info(f"📥 Descargadas {len(rows)} filas.")
-
-        # 5. PROCESAMIENTO
+        # Normalización de columnas (rellenar huecos para que Pandas no falle)
         headers = rows[0]
         expected_cols = len(headers)
         raw_data = rows[1:]
@@ -106,21 +86,83 @@ def sync_seeds():
 
         df = pd.DataFrame(normalized_data, columns=headers)
 
+        # --- Limpieza Específica Condicional ---
+        # Solo aplicamos transformaciones si la columna existe en esa hoja
+
+        # 1. Priority (Solo para master_mapping)
         if "priority" in df.columns:
             df["priority"] = (
                 pd.to_numeric(df["priority"], errors="coerce").fillna(50).astype(int)
             )
 
+        # 2. Keyword (Genérico)
         if "keyword" in df.columns:
             df["keyword"] = df["keyword"].astype(str).str.strip()
 
-        TARGET_CSV.parent.mkdir(parents=True, exist_ok=True)
-        df.to_csv(TARGET_CSV, index=False, encoding="utf-8")
+        # 3. Clean Name (Para Bizum directory)
+        if "clean_name" in df.columns:
+            df["clean_name"] = df["clean_name"].astype(str).str.strip()
 
-        logging.info(f"✅ Archivo guardado correctamente en: {TARGET_CSV}")
+        # Guardar CSV
+        target_file.parent.mkdir(parents=True, exist_ok=True)
+        df.to_csv(target_file, index=False, encoding="utf-8")
+
+        logging.info(f"✅ Guardado correctamente: {target_file.name}")
 
     except Exception as e:
-        logging.error(f"🔥 Error crítico: {e}")
+        logging.error(f"❌ Error procesando '{sheet_name}': {e}")
+
+
+def sync_seeds():
+    print(
+        f"""
+    ========================================
+        🌱 DWH FINANCIAL - SEED SYNC MULTI
+    ========================================
+    """
+    )
+
+    if not SPREADSHEET_ID:
+        logging.error("❌ Error: Falta la variable de entorno MAPPING_SHEET_ID en .env")
+        exit(1)
+
+    logging.info(f"🔄 Conectando a Google Sheets...")
+
+    try:
+        creds = get_credentials()
+        service = build("sheets", "v4", credentials=creds)
+        spreadsheet = service.spreadsheets()
+
+        # 1. Obtener lista de pestañas REALES en el documento (Diagnóstico)
+        meta = spreadsheet.get(spreadsheetId=SPREADSHEET_ID).execute()
+        sheets = meta.get("sheets", [])
+        real_sheet_names = [s["properties"]["title"] for s in sheets]
+
+        logging.info(f"🔎 Pestañas disponibles en el Excel: {real_sheet_names}")
+
+        # 2. Iterar sobre la configuración de hojas definida arriba
+        for config in SHEETS_TO_SYNC:
+            sheet_name = os.environ.get(config["env_var"])
+
+            target_path = SEEDS_DIR / config["file_name"]
+
+            # Validación de existencia
+            if sheet_name not in real_sheet_names:
+                logging.warning(
+                    f"⚠️ La pestaña '{sheet_name}' NO existe en el Google Sheet."
+                )
+                logging.warning(
+                    f"   (Buscada por variable: {config['env_var']} o default)"
+                )
+                continue
+
+            # Ejecutar descarga
+            download_and_save_sheet(service, SPREADSHEET_ID, sheet_name, target_path)
+
+        print("\n✨ Sincronización completada con éxito.\n")
+
+    except Exception as e:
+        logging.error(f"🔥 Error crítico de conexión: {e}")
 
 
 if __name__ == "__main__":

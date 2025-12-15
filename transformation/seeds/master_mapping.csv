@@ -116,8 +116,8 @@ G2G,10,Gastos Variables,Suscripciones,Software y Apps,G2G
 GARCIA GOURMET,10,Gastos Variables,Ocio y Restauración,Cafeterías,Forn García
 GENERALI SEG,10,Gastos Fijos,Seguros,Vida/Hogar,Generali Seguros
 GENERALITAT VALENCIANA,10,Gastos Fijos,Impuestos y Tasas,Tasas Administrativas,Generalitat Valenciana
-GEOTECNIA,10,CAPEX,Obras e Inversión,Geotécnico,Geotecnia
-GEOVAL,10,CAPEX,Obras e Inversión,Geotécnico,Geotecnia
+GEOTECNIA,10,CAPEX,Obras e Inversión,Geotécnico,Geoval
+GEOVAL,10,CAPEX,Obras e Inversión,Geotécnico,Geoval
 GESTOPARK,10,Gastos Variables,Transporte,Parking y Peajes,Gestopark
 GLOVAL VALUATION,10,CAPEX,Trámites y Escrituras,Tasación,Gloval Valuation
 GOVEE,10,Gastos Variables,Compras,Tecnología y Electrónica,Govee
@@ -286,3 +286,10 @@ ANTONIA ALEJANDRA,10,Gastos Variables,Compras,Regalos a terceros,Tienda El Rocio
 O-BI OINETAKOAK,10,Gastos Variables,Compras,Ropa y Accesorios,Zapatos Obi
 NAGY VÁSÁRCSARNOK,10,Gastos Variables,Compras,Regalos a terceros,Mercado Central Budapest
 ESPACIOOPEN,10,Gastos Variables,Ocio y Restauración,Restaurantes y Bares,Bilbao Old Cookie Factory
+XAVIER FERREIRO,10,Gastos Variables,Ocio y Restauración,Heladerías y Horchaterías,Heladería Angelo
+TRANSFERENCIA A,10,Gastos Variables,Otros Gastos,Transferencia Enviada,
+TRANSFERENCIA DE,10,Ingresos,Otros Ingresos,Transferencia Recibida,
+TRANSF OTR,20,Ingresos,Otros Ingresos,Transferencia Recibida,
+CUENTA TÚ Y YO,10,Movimientos Operativos,Transferencias,Traspasos Internos,
+TRANSF,30,Movimientos Operativos,Transferencias,,
+POLDAUF RICHARD,10,Gastos Variables,Viajes,Gastos en Destino,Lockers Budapest

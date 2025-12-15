@@ -86,7 +86,7 @@ SELECT
     COALESCE(
         -- 1. PRIMERA OPCIÓN: Si es Bizum, intentamos sacar el nombre del directorio
         CASE
-            WHEN (operativa_interna = 'Bizum' OR UPPER(concepto) LIKE '%BIZUM%')
+            WHEN (operativa_interna = 'Bizum' OR UPPER(concepto) LIKE '%BIZUM%' OR UPPER(concepto) LIKE '%TRANSF%')
             THEN {{ extract_bizum_name('concepto') }}
             ELSE NULL
         END,

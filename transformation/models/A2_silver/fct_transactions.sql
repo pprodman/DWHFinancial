@@ -41,7 +41,11 @@ enriched_stage AS (
             WHEN entidad = 'Bankinter' AND origen = 'Shared' AND UPPER(concepto) LIKE '%PABLO%' AND ABS(COALESCE(importe, 0)) IN (500, 750) THEN 'Aportación'
             WHEN entidad = 'Bankinter' AND origen = 'Shared' AND UPPER(concepto) LIKE '%LLEDO%' AND ABS(COALESCE(importe, 0)) IN (500, 750) THEN 'Aportación Lledó'
 
-            -- Movimientos internos
+            -- Transferencias específicas de Lledó en cuenta personal
+            WHEN entidad = 'Bankinter' AND origen = 'Account' AND UPPER(concepto) LIKE '%TRANSF%' AND UPPER(concepto) LIKE '%LLEDO%' THEN 'Transferencia'
+            WHEN entidad = 'Bankinter' AND origen = 'Account' AND UPPER(concepto) LIKE '%BIZUM%' AND UPPER(concepto) LIKE '%LLEDO%' THEN 'Bizum'
+
+            -- Movimientos internos genéricos
             WHEN UPPER(concepto) LIKE '%TRASPASO%' OR UPPER(concepto) LIKE '%TRANSFERENCIA INTERNA%' THEN 'Traspaso Interno'
             WHEN UPPER(concepto) LIKE '%BIZUM%' THEN 'Bizum'
             ELSE 'Movimiento Regular'
@@ -53,7 +57,6 @@ enriched_stage AS (
 unpacked_stage AS (
     SELECT
         *,
-        -- Usamos SAFE_OFFSET para evitar errores si la cadena no tiene suficientes partes
         SPLIT(_cat_string, '|')[SAFE_OFFSET(0)] AS cat_grupo,
         SPLIT(_cat_string, '|')[SAFE_OFFSET(1)] AS cat_categoria,
         SPLIT(_cat_string, '|')[SAFE_OFFSET(2)] AS cat_subcategoria,
@@ -77,32 +80,48 @@ SELECT
     origen,
     operativa_interna,
 
-    -- Dimensiones Jerárquicas limpias
-    COALESCE(cat_grupo, 'Sin Clasificar') AS grupo,
-    COALESCE(cat_categoria, 'Sin Clasificar') AS categoria,
-    COALESCE(cat_subcategoria, 'Sin Clasificar') AS subcategoria,
+    -- Dimensiones Jerárquicas limpias con OVERRIDES
+    CASE
+        WHEN origen = 'Shared' AND UPPER(concepto) LIKE '%LLEDO%' THEN 'Movimientos Operativos'
+        WHEN origen = 'Account' AND operativa_interna = 'Transferencia' and importe > 0 THEN 'Ingresos'
+        WHEN origen = 'Account' AND operativa_interna = 'Transferencia' and importe < 0 THEN 'Gastos Variables'
+        ELSE COALESCE(cat_grupo, 'Sin Clasificar')
+    END AS grupo,
+
+    CASE
+        WHEN origen = 'Shared' AND UPPER(concepto) LIKE '%LLEDO%' THEN 'Transferencias'
+        WHEN origen = 'Account' AND operativa_interna = 'Transferencia' and importe > 0 THEN 'Otros Ingresos'
+        WHEN origen = 'Account' AND operativa_interna = 'Transferencia' and importe < 0 THEN 'Otros Gastos'
+        ELSE COALESCE(cat_categoria, 'Sin Clasificar')
+    END AS categoria,
+
+    CASE
+        WHEN origen = 'Shared' AND UPPER(concepto) LIKE '%LLEDO%' THEN 'Traspasos Internos'
+        WHEN origen = 'Account' AND operativa_interna = 'Transferencia' and importe > 0 THEN 'Transferencia Recibida'
+        WHEN origen = 'Account' AND operativa_interna = 'Transferencia' and importe < 0 THEN 'Transferencia Enviada'
+        ELSE COALESCE(cat_subcategoria, 'Sin Clasificar')
+    END AS subcategoria,
 
     -- NOMBRE LIMPIO DEL COMERCIO / ENTIDAD (Lógica COALESCE de Prioridad)
     COALESCE(
-        -- 1. PRIMERA OPCIÓN: Si es Bizum, intentamos sacar el nombre del directorio
+        -- 1. PRIMERA OPCIÓN: Si es Bizum o Transferencia, buscamos en directorio
         CASE
             WHEN (operativa_interna = 'Bizum' OR UPPER(concepto) LIKE '%BIZUM%' OR UPPER(concepto) LIKE '%TRANSF%')
             THEN {{ extract_bizum_name('concepto') }}
             ELSE NULL
         END,
 
-        -- 2. SEGUNDA OPCIÓN: Master Mapping, pero filtramos nombres genéricos "basura"
-        --    Si cat_entity_name es "Bizum", "Transferencia" o "Desconocido", lo convertimos a NULL para seguir buscando
+        -- 2. SEGUNDA OPCIÓN: Master Mapping (filtrando basura)
         NULLIF(NULLIF(NULLIF(NULLIF(cat_entity_name, 'Desconocido'), 'Bizum'), 'Bizum Enviado'), 'Transferencia'),
 
-        -- 3. TERCERA OPCIÓN: Si es Bizum y falló el directorio, usamos limpieza automática
+        -- 3. TERCERA OPCIÓN: Limpieza automática para Bizums rebeldes
         CASE
             WHEN (operativa_interna = 'Bizum' OR UPPER(concepto) LIKE '%BIZUM%')
             THEN {{ clean_bizum_name('concepto') }}
             ELSE NULL
         END,
 
-        -- 4. ÚLTIMA OPCIÓN: Nombre original limpio
+        -- 4. ÚLTIMA OPCIÓN: Fallback estándar
         INITCAP(TRIM(concepto))
     ) AS comercio,
 

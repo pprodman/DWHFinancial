@@ -21,6 +21,6 @@ CASE
         THEN '{{ row.grupo | replace("'", "\\'") }}|{{ row.categoria | replace("'", "\\'") }}|{{ row.subcategoria | replace("'", "\\'") }}|{{ row.entity_name | replace("'", "\\'") }}'
     {% endfor %}
 {% endif %}
-    ELSE 'Sin Clasificar|Sin Clasificar|Sin Clasificar|Desconocido'
+    ELSE 'Sin Clasificar|Sin Clasificar|Sin Clasificar|Sin Clasificar'
 END
 {% endmacro %}

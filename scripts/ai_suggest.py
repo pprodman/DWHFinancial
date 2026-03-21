@@ -39,9 +39,9 @@ def get_uncategorized_concepts():
     query = """
     SELECT DISTINCT concepto
     FROM `dwhfinancial.silver.fct_transactions`
-    WHERE (grupo IS NULL OR grupo = 'Sin Clasificar' OR grupo = 'Gastos Variables')
-      AND (categoria IS NULL OR categoria = 'Otros Gastos')
-      AND (subcategoria IS NULL OR subcategoria = 'Sin Clasificar')
+    WHERE (grupo IS NULL OR grupo = 'Sin Clasificar')
+     OR (categoria IS NULL OR categoria = 'Sin Clasificar')
+     OR (subcategoria IS NULL OR subcategoria = 'Sin Clasificar')
     LIMIT 20
     """
 
@@ -95,7 +95,7 @@ def generate_suggestions(concepts, context_structure):
     1. keyword: Texto clave del concepto en MAYÚSCULAS.
     2. priority: 50.
     3. entity_name: Nombre limpio (Title Case).
-    4. Usa solo mi estructura. Si dudas: 'Gastos Variables,Otros,Varios'.
+    4. Usa solo mi estructura. Si dudas: 'Gastos Variables,Otros Gastos,Desconocido'.
 
     CONCEPTOS:
     {", ".join(concepts)}

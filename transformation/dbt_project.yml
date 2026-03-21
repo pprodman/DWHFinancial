@@ -40,6 +40,11 @@ models:
       +tags: ['gold', 'final']
       +schema: gold
 
+    A4_reporting:
+      +materialized: view
+      +schema: reporting
+      +tags: ['reporting']
+
 seeds:
   mi_pipeline_bancario:
     +schema: mappings

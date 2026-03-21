@@ -1,5 +1,5 @@
 keyword,priority,grupo_categoria,categoria,subcategoria,entity_name
-A.E.A.T. DEVOLUCIONES,10,Ingresos,Devoluciones,Hacienda,Agencia Tributaria
+A.E.A.T. DEVOLUCIONES,10,Ingresos,Devoluciones,Hacienda (Cobros),Agencia Tributaria
 ãAM RESTAURANTES,10,Gastos Variables,Ocio y Restauración,Restaurantes y Bares,Ñam Restaurantes - Bilbao Intermodal
 ABRACADABRA,10,Gastos Variables,Compras,Juguetes y Juegos,Abracadabra
 ABSENTIA,10,Gastos Variables,Ocio y Restauración,Restaurantes y Bares,Absentia Coctel Bar
@@ -24,7 +24,7 @@ AYUNTAMIENTO DE CASTELL,20,Ingresos,Devoluciones,Fianzas,Ayuntamiento de Castell
 AYUNTAMIENTO DE CASTELLON,10,Gastos Fijos,Impuestos y Tasas,Vivienda (IBI/Basuras),Ayuntamiento de Castellón
 BABEL,10,Gastos Variables,Compras,Libros y Papelería,Babel
 BAKELITO,10,Gastos Variables,Ocio y Restauración,Restaurantes y Bares,Bakelito
-BALANCE MIGRATION,10,Movimientos Operativos,Gastos Financieros,Comisiones Bancarias,Cambio Divisa y Redes
+BALANCE MIGRATION,10,Gastos Financieros,Comisiones Bancarias,Cambio Divisa y Redes,Cambio Divisa y Redes
 BALUARD,10,Gastos Variables,Ocio y Restauración,Restaurantes y Bares,Baluard
 BAR AMO,10,Gastos Variables,Ocio y Restauración,Restaurantes y Bares,Bar Amo
 BAR ROCA,10,Gastos Variables,Ocio y Restauración,Restaurantes y Bares,Bar Roca
@@ -175,7 +175,7 @@ LEBLANC,10,Gastos Variables,Salud y Cuidado,Cuidado Personal,Le Blanc Peluquerí
 LEKUE,10,Gastos Variables,Compras,Menaje y Cocina,Lekué
 LEROY MERLIN,10,Gastos Variables,Compras,Hogar y Decoración,Leroy Merlin
 LIDL,10,Gastos Fijos,Alimentación,Supermercado,Lidl
-LIQ PROVISION,10,CAPEX,Trámites y Escrituras,Devolución Provisión,Bankinter
+LIQ PROVISION,10,CAPEX,Trámites y Escrituras,Provisión de Fondos,Bankinter
 LIQ. PROPIA CTA,10,Ingresos,Ingresos Pasivos,Intereses,Bankinter
 LOKIMICA,10,Gastos Fijos,Servicios Hogar,Mantenimiento y Reparaciones,Lokimica
 LORCA 41,10,Gastos Variables,Ocio y Restauración,Restaurantes y Bares,Lorca 41
@@ -287,7 +287,7 @@ UDACO,10,Gastos Fijos,Alimentación,Supermercado,Supermercado Udaco
 UDEMY,10,Gastos Variables,Formación,Cursos Online,Udemy
 VENTA GUADALEST,10,Gastos Variables,Ocio y Restauración,Restaurantes y Bares,Venta Guadalest
 VERIFICACIONES Y CERTIF,10,CAPEX,Trámites y Escrituras,Tasación,Verificaciones y Certificaciones
-VETERINARIA R GUALLART,10,Gastos Variables,Mascotas,Veterinaria,Veterinario
+VETERINARIA R GUALLART,10,Gastos Variables,Mascotas,Veterinario,Veterinario
 VIVES,10,Gastos Variables,Ocio y Restauración,Cafeterías,Vives 1908
 WALLAPOP,10,Gastos Variables,Compras,Marketplace,Wallapop
 XAVIER FERREIRO,10,Gastos Variables,Ocio y Restauración,Heladerías y Horchaterías,Heladería Angelo
